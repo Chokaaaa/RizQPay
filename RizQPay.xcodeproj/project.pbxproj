@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		84FA575F2EB6091200A4BE7F /* FullSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 84FA575E2EB6091200A4BE7F /* FullSDK */; };
+		84FA57642EB6795400A4BE7F /* QRScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 84FA57632EB6795400A4BE7F /* QRScanner */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		84BF162C2E5B951400E1AF87 /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RizQPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84FA57642EB6795400A4BE7F /* QRScanner in Frameworks */,
+				84FA575F2EB6091200A4BE7F /* FullSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = RizQPay;
 			packageProductDependencies = (
+				84FA575E2EB6091200A4BE7F /* FullSDK */,
+				84FA57632EB6795400A4BE7F /* QRScanner */,
 			);
 			productName = RizQPay;
 			productReference = 84BF162C2E5B951400E1AF87 /* RizQPay.app */;
@@ -94,6 +103,10 @@
 			);
 			mainGroup = 84BF16232E5B951400E1AF87;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				84FA575D2EB6091200A4BE7F /* XCRemoteSwiftPackageReference "mobile-sdk-full-swift-package" */,
+				84FA57622EB6795400A4BE7F /* XCRemoteSwiftPackageReference "QRScanner" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84BF162D2E5B951400E1AF87 /* Products */;
 			projectDirPath = "";
@@ -256,11 +269,13 @@
 				DEVELOPMENT_TEAM = 9PS527BMRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Please Allow RizQPay to have access to your camera so you can scan a QR codes to proceed with payment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -284,11 +299,13 @@
 				DEVELOPMENT_TEAM = 9PS527BMRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Please Allow RizQPay to have access to your camera so you can scan a QR codes to proceed with payment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -324,6 +341,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		84FA575D2EB6091200A4BE7F /* XCRemoteSwiftPackageReference "mobile-sdk-full-swift-package" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/2gis/mobile-sdk-full-swift-package";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.0.0;
+			};
+		};
+		84FA57622EB6795400A4BE7F /* XCRemoteSwiftPackageReference "QRScanner" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mercari/QRScanner.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		84FA575E2EB6091200A4BE7F /* FullSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84FA575D2EB6091200A4BE7F /* XCRemoteSwiftPackageReference "mobile-sdk-full-swift-package" */;
+			productName = FullSDK;
+		};
+		84FA57632EB6795400A4BE7F /* QRScanner */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84FA57622EB6795400A4BE7F /* XCRemoteSwiftPackageReference "QRScanner" */;
+			productName = QRScanner;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 84BF16242E5B951400E1AF87 /* Project object */;
 }

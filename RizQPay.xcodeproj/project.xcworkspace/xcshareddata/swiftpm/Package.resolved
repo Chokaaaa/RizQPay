@@ -1,0 +1,24 @@
+{
+  "originHash" : "bbc5eebce966863f930440aeeed7d92fea795925cbf6b6807c5baeceb6b52c74",
+  "pins" : [
+    {
+      "identity" : "mobile-sdk-full-swift-package",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/2gis/mobile-sdk-full-swift-package",
+      "state" : {
+        "revision" : "5994ee97f9571f0216f3dc6d22afc9459a3b5db9",
+        "version" : "13.0.0"
+      }
+    },
+    {
+      "identity" : "qrscanner",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mercari/QRScanner.git",
+      "state" : {
+        "revision" : "5ff64fd19fc1ae1c11a35bba8ac765c940c794b7",
+        "version" : "2.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}
