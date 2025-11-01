@@ -53,7 +53,7 @@ struct ContentView: View {
                 
             }
             .fullScreenCover(isPresented: $showingCamera) {
-                QRScannerWithTorchView()
+                QRScannerView()
             }
         }
     }
