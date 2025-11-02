@@ -13,13 +13,45 @@ struct RizqWebView: View {
     let onDismiss: () -> Void
     @State private var isLoading = true
     
+    // Computed property to get the URL from scanned code
+    private var webURL: URL? {
+        // Debug: Print the scanned code
+        print("🔍 DEBUG: Scanned QR Code content: \(scannedCode)")
+        
+        // Try to create URL from scanned code
+        if let url = URL(string: scannedCode), url.scheme != nil {
+            print("✅ DEBUG: Valid URL found: \(url.absoluteString)")
+            return url
+        }
+        
+        // If scanned code doesn't contain a valid URL, check if it's just a domain
+        let processedCode: String
+        if !scannedCode.hasPrefix("http://") && !scannedCode.hasPrefix("https://") {
+            processedCode = "https://\(scannedCode)"
+            print("🔧 DEBUG: Adding https:// to scanned code: \(processedCode)")
+        } else {
+            processedCode = scannedCode
+        }
+        
+        if let url = URL(string: processedCode), url.scheme != nil {
+            print("✅ DEBUG: Valid URL created: \(url.absoluteString)")
+            return url
+        }
+        
+        // Fallback to default URL if scanned code is not a valid URL
+        let fallbackURL = URL(string: "https://app.rizq.kz")!
+        print("⚠️ DEBUG: Invalid URL in QR code, using fallback: \(fallbackURL.absoluteString)")
+        return fallbackURL
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                WebView(url: URL(string: "https://app.rizq.kz"))
+                WebView(url: webURL)
                     .onAppear {
-                        // Add a small delay to show loading state
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        print("🌐 DEBUG: WebView loading URL: \(webURL?.absoluteString ?? "nil")")
+                        // Reduced loading delay for better user experience
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             isLoading = false
                         }
                     }
