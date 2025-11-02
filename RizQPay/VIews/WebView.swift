@@ -11,7 +11,6 @@ import WebKit
 // Optimized WebView wrapper with better performance
 struct WebView: UIViewRepresentable {
     let url: URL?
-    @State private var webView: WKWebView?
     
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -27,7 +26,6 @@ struct WebView: UIViewRepresentable {
         // Set navigation delegate for better error handling
         webView.navigationDelegate = context.coordinator
         
-        self.webView = webView
         return webView
     }
     

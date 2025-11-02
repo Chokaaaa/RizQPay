@@ -6,67 +6,44 @@
 //
 
 import SwiftUI
+import MapKit
+import CoreLocation
 
+// MARK: - Main Map View
 struct MapView: View {
     @State private var showingCamera = false
+    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
-                
-                    NavigationStack {
-                        VStack {
-                            HStack {
-                                
-                                
-                                
-                                Button(action: {
-                                    // Profile action
-                                }) {
-                                    Text("NY")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .frame(width: 36, height: 36)
-                                        .background(Color.gray)
-                                        .clipShape(Circle())
-//
-                                        .frame(width: 44, height: 44)
-                                        .background(Color.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                }
-                                .padding(.leading, 10)
-                                .padding(.top, 10)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-//                                    Color.clear
-//                                        .onAppear {
-                                            showingCamera = true
-//                                        }
-                                }) {
-                                    Image(systemName: "camera.fill")
-                                        .foregroundStyle(Color.white)
-                                        .frame(width: 36, height: 36)
-                                        .background(Color.gray)
-                                        .clipShape(Circle())
-//
-                                        .frame(width: 44, height: 44)
-                                        .background(Color.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                }
-                                .padding(.trailing, 10)
-                                .padding(.top, 10)
-                                
-                                
-                            }
-                            
-                            Spacer()
-                        }
-                    }
-               
-                
-            .fullScreenCover(isPresented: $showingCamera) {
-                QRScannerView()
+        NavigationStack {
+            ZStack {
+                MapContentView(locationManager: locationManager)
+                MapOverlayView(
+                    onProfileTap: handleProfileTap,
+                    onCameraTap: handleCameraTap,
+                    onLocationTap: handleLocationTap
+                )
+            }
         }
+        .fullScreenCover(isPresented: $showingCamera) {
+            QRScannerView()
+        }
+    }
+}
+
+// MARK: - MapView Actions
+extension MapView {
+    private func handleProfileTap() {
+        // TODO: Implement profile action
+        print("Profile tapped")
+    }
+    
+    private func handleCameraTap() {
+        showingCamera = true
+    }
+    
+    private func handleLocationTap() {
+        locationManager.centerOnUser()
     }
 }
 

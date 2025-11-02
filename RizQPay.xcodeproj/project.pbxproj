@@ -9,10 +9,12 @@
 /* Begin PBXBuildFile section */
 		84FA575F2EB6091200A4BE7F /* FullSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 84FA575E2EB6091200A4BE7F /* FullSDK */; };
 		84FA57642EB6795400A4BE7F /* QRScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 84FA57632EB6795400A4BE7F /* QRScanner */; };
+		84FA579E2EB79C5E00A4BE7F /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FA579D2EB79C5E00A4BE7F /* LocationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		84BF162C2E5B951400E1AF87 /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RizQPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		84FA579D2EB79C5E00A4BE7F /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		84FA57A12EB79DC900A4BE7F /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = RizQPay.app; path = "/Users/nursultanyelemessov/Desktop/ИП RizQ/Приложение/iOS/RizQPay/build/Debug-iphoneos/RizQPay.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,16 +42,8 @@
 			isa = PBXGroup;
 			children = (
 				84BF162E2E5B951400E1AF87 /* RizQPay */,
-				84BF162D2E5B951400E1AF87 /* Products */,
+				84FA579D2EB79C5E00A4BE7F /* LocationManager.swift */,
 			);
-			sourceTree = "<group>";
-		};
-		84BF162D2E5B951400E1AF87 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				84BF162C2E5B951400E1AF87 /* RizQPay.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -76,7 +70,7 @@
 				84FA57632EB6795400A4BE7F /* QRScanner */,
 			);
 			productName = RizQPay;
-			productReference = 84BF162C2E5B951400E1AF87 /* RizQPay.app */;
+			productReference = 84FA57A12EB79DC900A4BE7F /* RizQPay.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -108,7 +102,7 @@
 				84FA57622EB6795400A4BE7F /* XCRemoteSwiftPackageReference "QRScanner" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 84BF162D2E5B951400E1AF87 /* Products */;
+			productRefGroup = 84BF16232E5B951400E1AF87;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -132,6 +126,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84FA579E2EB79C5E00A4BE7F /* LocationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,7 +264,10 @@
 				DEVELOPMENT_TEAM = 9PS527BMRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Please Allow RizQPay to have access to your camera so you can scan a QR codes to proceed with payment";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "RizQ Pay needs location access to show your current position on the map";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to show your current position on the map";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -299,7 +297,10 @@
 				DEVELOPMENT_TEAM = 9PS527BMRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Please Allow RizQPay to have access to your camera so you can scan a QR codes to proceed with payment";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "RizQ Pay needs location access to show your current position on the map";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to show your current position on the map";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
