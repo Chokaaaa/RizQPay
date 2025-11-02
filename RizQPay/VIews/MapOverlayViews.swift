@@ -81,7 +81,31 @@ struct BottomOverlayBar: View {
     }
 }
 
+struct NavigationControlsBar: View {
+    let onStopNavigation: () -> Void
+    
+    var body: some View {
+        HStack {
+            Button(action: onStopNavigation) {
+                HStack {
+                    Image(systemName: "xmark.circle.fill")
+                    Text("Stop Navigation")
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.red)
+                .cornerRadius(20)
+            }
+            
+            Spacer()
+        }
+        .padding(.leading, 16)
+    }
+}
+
 struct MapOverlayView: View {
+    @ObservedObject var locationManager: LocationManager
     let onProfileTap: () -> Void
     let onCameraTap: () -> Void
     let onLocationTap: () -> Void
@@ -94,6 +118,14 @@ struct MapOverlayView: View {
             )
             
             Spacer()
+            
+            // Show navigation controls when navigating
+            if locationManager.isNavigating {
+                NavigationControlsBar(onStopNavigation: {
+                    locationManager.stopNavigation()
+                })
+                .padding(.bottom, 10)
+            }
             
             BottomOverlayBar(onLocationTap: onLocationTap)
         }

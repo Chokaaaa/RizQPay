@@ -12,6 +12,7 @@ import CoreLocation
 // MARK: - Main Map View
 struct MapView: View {
     @State private var showingCamera = false
+    @State private var showingProfile = false
     @StateObject private var locationManager = LocationManager()
     
     var body: some View {
@@ -19,6 +20,7 @@ struct MapView: View {
             ZStack {
                 MapContentView(locationManager: locationManager)
                 MapOverlayView(
+                    locationManager: locationManager,
                     onProfileTap: handleProfileTap,
                     onCameraTap: handleCameraTap,
                     onLocationTap: handleLocationTap
@@ -28,14 +30,16 @@ struct MapView: View {
         .fullScreenCover(isPresented: $showingCamera) {
             QRScannerView()
         }
+        .fullScreenCover(isPresented: $showingProfile) {
+            ProfileView()
+        }
     }
 }
 
 // MARK: - MapView Actions
 extension MapView {
     private func handleProfileTap() {
-        // TODO: Implement profile action
-        print("Profile tapped")
+        showingProfile = true
     }
     
     private func handleCameraTap() {

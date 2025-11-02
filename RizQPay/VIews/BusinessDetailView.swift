@@ -10,20 +10,66 @@ import SwiftUI
 // MARK: - Business Detail Views
 struct BusinessDetailView: View {
     let business: BusinessLocation
+    let locationManager: LocationManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingNavigationAlert = false
+    @State private var navigationMessage = ""
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                BusinessImageSection(business: business)
-                BusinessInfoSection(business: business)
-                BusinessContactSection(business: business)
-                
-                Spacer(minLength: 50)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 20) {
+                    BusinessImageSection(business: business)
+                    BusinessInfoSection(business: business)
+                    BusinessContactSection(business: business)
+                    
+                    Spacer(minLength: 50)
+                }
+                .padding()
             }
+            
+            // Button outside scroll view at bottom
+            Button(action: {
+                startNavigation()
+            }) {
+                HStack {
+                    Image(systemName: "location.fill")
+                    Text("Get Directions")
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(locationManager.isLocationAvailable() ? Color.blue : Color.gray)
+                .cornerRadius(12)
+            }
+            .disabled(!locationManager.isLocationAvailable())
             .padding()
         }
         .navigationTitle(business.title)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Navigation Status", isPresented: $showingNavigationAlert) {
+            Button("OK") { }
+        } message: {
+            Text(navigationMessage)
+        }
+    }
+    
+    private func startNavigation() {
+        guard locationManager.checkLocationPermissions() else {
+            navigationMessage = "Location permission is required to provide directions. Please enable location access in Settings."
+            showingNavigationAlert = true
+            return
+        }
+        
+        guard locationManager.location != nil else {
+            navigationMessage = "Unable to get your current location. Please make sure location services are enabled."
+            showingNavigationAlert = true
+            return
+        }
+        
+        // Start navigation - this will now provide detailed logging
+        locationManager.startNavigation(to: business)
+        dismiss()
     }
 }
 
@@ -74,6 +120,9 @@ struct BusinessContactSection: View {
                 icon: "phone",
                 text: "+971 50 123 4567"
             )
+            
+            
+            
         }
     }
 }
