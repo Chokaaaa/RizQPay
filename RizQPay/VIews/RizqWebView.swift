@@ -47,13 +47,9 @@ struct RizqWebView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WebView(url: webURL)
+                WebView(url: webURL, isLoading: $isLoading)
                     .onAppear {
                         print("🌐 DEBUG: WebView loading URL: \(webURL?.absoluteString ?? "nil")")
-                        // Reduced loading delay for better user experience
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            isLoading = false
-                        }
                     }
                 
                 if isLoading {

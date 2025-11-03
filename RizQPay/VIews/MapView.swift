@@ -28,7 +28,7 @@ struct MapView: View {
             }
         }
         .fullScreenCover(isPresented: $showingCamera) {
-            QRScannerView()
+            QRCodeScannerView()
         }
         .fullScreenCover(isPresented: $showingProfile) {
             ProfileView()

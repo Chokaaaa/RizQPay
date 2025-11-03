@@ -79,7 +79,6 @@ class LocationManager: NSObject, ObservableObject {
     func requestLocation() {
         print("🔍 Requesting location...")
         print("   Current authorization status: \(authorizationStatus)")
-        print("   Location services enabled: \(CLLocationManager.locationServicesEnabled())")
         
         switch authorizationStatus {
         case .notDetermined:

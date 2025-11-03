@@ -1,5 +1,5 @@
 //
-//  QRScannerView.swift
+//  QRCodeScannerView.swift
 //  RizQPay
 //
 //  Created by Nursultan Yelemessov on 01/11/2025.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct QRScannerView: View {
+struct QRCodeScannerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isShowingWebView = false
     
@@ -53,5 +53,5 @@ struct QRScannerView: View {
 }
 
 #Preview {
-    QRScannerView()
+    QRCodeScannerView()
 }
