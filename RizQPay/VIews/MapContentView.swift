@@ -22,7 +22,15 @@ struct GoogleMapsContentView: View {
         )
     ]
     
+    // Cache for custom marker images to avoid recreating them
+    fileprivate static var markerCache: [String: UIImage] = [:]
+    
     private var businesses: [BusinessLocation] { Self.businessData }
+    
+    /// Public method to get business locations for prefetching
+    static func getBusinessLocations() -> [BusinessLocation] {
+        return businessData
+    }
     
     var body: some View {
         GoogleMapsView(
@@ -33,6 +41,11 @@ struct GoogleMapsContentView: View {
         .onAppear {
             locationManager.requestLocation()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("BusinessMarkerTapped"))) { notification in
+            if let business = notification.object as? BusinessLocation {
+                navigateToBusinessDetail(business)
+            }
+        }
     }
 }
 
@@ -40,6 +53,10 @@ struct GoogleMapsContentView: View {
 struct GoogleMapsView: UIViewRepresentable {
     @ObservedObject var locationManager: GoogleMapsLocationManager
     let businesses: [BusinessLocation]
+    
+    // Keep references to markers and polyline for efficient updates
+    fileprivate static var businessMarkers: [GMSMarker] = []
+    fileprivate static var currentPolyline: GMSPolyline?
     
     func makeUIView(context: Context) -> GMSMapView {
         let mapView = GMSMapView()
@@ -66,15 +83,27 @@ struct GoogleMapsView: UIViewRepresentable {
     }
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
-        // Update camera position
-        if mapView.camera.target.latitude != locationManager.camera.target.latitude ||
-           mapView.camera.target.longitude != locationManager.camera.target.longitude ||
-           mapView.camera.zoom != locationManager.camera.zoom {
-            mapView.camera = locationManager.camera
+        // Always update route polyline first (this is most important for user experience)
+        updateRoute(on: mapView)
+        
+        // Then handle camera updates
+        guard locationManager.hasPendingCameraUpdate else {
+            return
         }
         
-        // Update route polyline
-        updateRoute(on: mapView)
+        // Only update camera if there's a significant change
+        let currentCamera = mapView.camera
+        let newCamera = locationManager.camera
+        
+        let latDiff = abs(currentCamera.target.latitude - newCamera.target.latitude)
+        let lonDiff = abs(currentCamera.target.longitude - newCamera.target.longitude)
+        let zoomDiff = abs(currentCamera.zoom - newCamera.zoom)
+        
+        // Only update if changes are significant enough
+        if latDiff > 0.001 || lonDiff > 0.001 || zoomDiff > 0.5 {
+            mapView.animate(to: newCamera)
+            locationManager.clearPendingCameraUpdate()
+        }
     }
     
     func makeCoordinator() -> Coordinator {
@@ -82,8 +111,9 @@ struct GoogleMapsView: UIViewRepresentable {
     }
     
     private func addBusinessMarkers(to mapView: GMSMapView) {
-        // Clear existing markers
-        mapView.clear()
+        // Clear existing markers first
+        Self.businessMarkers.forEach { $0.map = nil }
+        Self.businessMarkers.removeAll()
         
         for business in businesses {
             let marker = GMSMarker()
@@ -92,88 +122,119 @@ struct GoogleMapsView: UIViewRepresentable {
             marker.userData = business
             marker.map = mapView
             
-            // Create custom marker icon
+            // Create custom marker icon (now cached for performance)
             if let markerImage = createCustomMarker(for: business) {
                 marker.icon = markerImage
             }
+            
+            // Store reference for future updates
+            Self.businessMarkers.append(marker)
         }
-        
-        // Re-add route if it exists
-        updateRoute(on: mapView)
     }
     
     private func updateRoute(on mapView: GMSMapView) {
-        // Remove existing polylines
-        mapView.clear()
-        
-        // Re-add business markers
-        for business in businesses {
-            let marker = GMSMarker()
-            marker.position = business.coordinate
-            marker.title = business.title
-            marker.userData = business
-            marker.map = mapView
-            
-            if let markerImage = createCustomMarker(for: business) {
-                marker.icon = markerImage
-            }
-        }
+        // Remove only the existing polyline, not all markers
+        Self.currentPolyline?.map = nil
+        Self.currentPolyline = nil
         
         // Add route polyline if navigation is active
         if let route = locationManager.currentRoute {
+            print("🗺️ DEBUG: Adding polyline to map - Path count: \(route.path.count())")
+            print("🗺️ DEBUG: Polyline color: \(route.polyline.strokeColor), width: \(route.polyline.strokeWidth)")
+            
+            // Ensure polyline is visible with enhanced styling
+            route.polyline.strokeColor = UIColor.systemBlue
+            route.polyline.strokeWidth = 8.0
+            route.polyline.zIndex = 1000
+            route.polyline.geodesic = true
+            
+            // Add the polyline to the map
             route.polyline.map = mapView
+            Self.currentPolyline = route.polyline
+            
+            print("🗺️ DEBUG: Polyline added to map successfully")
+            
+            // Force a small delay to ensure map is ready, then verify polyline is still visible
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // Double check the polyline is still on the map
+                if Self.currentPolyline?.map == nil {
+                    print("⚠️ WARNING: Polyline disappeared from map, re-adding...")
+                    route.polyline.map = mapView
+                    Self.currentPolyline = route.polyline
+                }
+                
+                // Additional verification after a longer delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    if Self.currentPolyline?.map == nil {
+                        print("⚠️ CRITICAL: Polyline still not visible, forcing re-add...")
+                        route.polyline.map = mapView
+                        Self.currentPolyline = route.polyline
+                    } else {
+                        print("✅ Polyline confirmed visible on map")
+                    }
+                }
+            }
+        } else {
+            print("🗺️ DEBUG: No current route available")
         }
     }
     
-    private func createCustomMarker(for business: BusinessLocation) -> UIImage? {
-        let markerSize = CGSize(width: 80, height: 90)
-        
-        UIGraphicsBeginImageContextWithOptions(markerSize, false, 0)
-        defer { UIGraphicsEndImageContext() }
-        
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-        
-        // Draw white circle with shadow
-        let circleRect = CGRect(x: 10, y: 5, width: 60, height: 60)
-        
-        // Shadow
-        context.setShadow(offset: CGSize(width: 0, height: 2), blur: 3, color: UIColor.black.withAlphaComponent(0.3).cgColor)
-        context.setFillColor(UIColor.white.cgColor)
-        context.fillEllipse(in: circleRect)
-        
-        // Border
-        context.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
-        context.setLineWidth(1)
-        context.strokeEllipse(in: circleRect)
-        
-        // Business image
-        if let businessImage = UIImage(named: business.imageName) {
-            let imageRect = circleRect.insetBy(dx: 5, dy: 5)
-            
-            // Clip to circle
-            context.saveGState()
-            context.addEllipse(in: imageRect)
-            context.clip()
-            businessImage.draw(in: imageRect)
-            context.restoreGState()
+    func createCustomMarker(for business: BusinessLocation) -> UIImage? {
+        // Check cache first
+        if let cachedImage = GoogleMapsContentView.markerCache[business.imageName] {
+            return cachedImage
         }
         
-        // Draw triangle pointer
-        let trianglePath = UIBezierPath()
-        trianglePath.move(to: CGPoint(x: markerSize.width / 2, y: 75))
-        trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 - 8, y: 65))
-        trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 + 8, y: 65))
-        trianglePath.close()
+        let markerSize = CGSize(width: 80, height: 90)
         
-        context.setFillColor(UIColor.white.cgColor)
-        context.addPath(trianglePath.cgPath)
-        context.fillPath()
+        let renderer = UIGraphicsImageRenderer(size: markerSize)
+        let markerImage = renderer.image { context in
+            let cgContext = context.cgContext
+            
+            // Draw white circle with shadow
+            let circleRect = CGRect(x: 10, y: 5, width: 60, height: 60)
+            
+            // Shadow
+            cgContext.setShadow(offset: CGSize(width: 0, height: 2), blur: 3, color: UIColor.black.withAlphaComponent(0.3).cgColor)
+            cgContext.setFillColor(UIColor.white.cgColor)
+            cgContext.fillEllipse(in: circleRect)
+            
+            // Border
+            cgContext.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
+            cgContext.setLineWidth(1)
+            cgContext.strokeEllipse(in: circleRect)
+            
+            // Business image
+            if let businessImage = UIImage(named: business.imageName) {
+                let imageRect = circleRect.insetBy(dx: 5, dy: 5)
+                
+                // Clip to circle
+                cgContext.saveGState()
+                cgContext.addEllipse(in: imageRect)
+                cgContext.clip()
+                businessImage.draw(in: imageRect)
+                cgContext.restoreGState()
+            }
+            
+            // Draw triangle pointer
+            let trianglePath = UIBezierPath()
+            trianglePath.move(to: CGPoint(x: markerSize.width / 2, y: 75))
+            trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 - 8, y: 65))
+            trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 + 8, y: 65))
+            trianglePath.close()
+            
+            cgContext.setFillColor(UIColor.white.cgColor)
+            cgContext.addPath(trianglePath.cgPath)
+            cgContext.fillPath()
+            
+            cgContext.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
+            cgContext.addPath(trianglePath.cgPath)
+            cgContext.strokePath()
+        }
         
-        context.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
-        context.addPath(trianglePath.cgPath)
-        context.strokePath()
-        
-        return UIGraphicsGetImageFromCurrentImageContext()
+        // Cache the image for future use
+        GoogleMapsContentView.markerCache[business.imageName] = markerImage
+        return markerImage
     }
     
     class Coordinator: NSObject, GMSMapViewDelegate {
@@ -188,10 +249,8 @@ struct GoogleMapsView: UIViewRepresentable {
                 return false
             }
             
-            // Handle marker tap - navigate to business detail
+            // Use DispatchQueue.main.async for immediate UI response
             DispatchQueue.main.async {
-                // We need to present the business detail view
-                // This will be handled by the NavigationStack in the parent view
                 NotificationCenter.default.post(
                     name: NSNotification.Name("BusinessMarkerTapped"),
                     object: business
@@ -202,8 +261,12 @@ struct GoogleMapsView: UIViewRepresentable {
         }
         
         @MainActor func mapView(_ mapView: GMSMapView, didChange position: GMSCameraPosition) {
-            // Update location manager camera
-            parent.locationManager.camera = position
+            // Only update location manager if this is a user-initiated change
+            // Prevent feedback loop during programmatic updates
+            guard !parent.locationManager.isUpdatingCamera else { return }
+            
+            // Throttle camera updates to improve performance
+            parent.locationManager.updateCameraFromUserGesture(position)
         }
     }
 }

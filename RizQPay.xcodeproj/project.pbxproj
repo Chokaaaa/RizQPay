@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		846E5E1A2EB8FB8500416562 /* RoutesAPIExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846E5E192EB8FB8500416562 /* RoutesAPIExample.swift */; };
+		846E5E242EB91BA600416562 /* RouteCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846E5E232EB91BA600416562 /* RouteCache.swift */; };
 		84FA584C2EB8F11C00A4BE7F /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 84FA584B2EB8F11C00A4BE7F /* GoogleMaps */; };
 		84FA584E2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FA584D2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		846E5E192EB8FB8500416562 /* RoutesAPIExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutesAPIExample.swift; sourceTree = "<group>"; };
+		846E5E232EB91BA600416562 /* RouteCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteCache.swift; sourceTree = "<group>"; };
 		84FA58182EB8E33C00A4BE7F /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RizQPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84FA584D2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapsConfiguration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -45,6 +47,7 @@
 				84FA58182EB8E33C00A4BE7F /* RizQPay.app */,
 				84FA584D2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift */,
 				846E5E192EB8FB8500416562 /* RoutesAPIExample.swift */,
+				846E5E232EB91BA600416562 /* RouteCache.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -128,6 +131,7 @@
 			files = (
 				84FA584E2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift in Sources */,
 				846E5E1A2EB8FB8500416562 /* RoutesAPIExample.swift in Sources */,
+				846E5E242EB91BA600416562 /* RouteCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

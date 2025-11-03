@@ -68,33 +68,42 @@ class GoogleMapsRoute {
     }
     
     private func configurePolylineAppearance() {
+        // Make polyline clearly visible with enhanced styling
+        polyline.strokeWidth = 6.0
+        polyline.zIndex = 100 // Ensure it appears above other map elements
+        
         switch transportMode {
         case .driving:
             polyline.strokeColor = .systemBlue
-            polyline.strokeWidth = 5.0
-            polyline.spans = [GMSStyleSpan(color: .systemBlue)]
+            // Create a solid blue line with border for better visibility
+            let borderSpan = GMSStyleSpan(color: UIColor.white.withAlphaComponent(0.8))
+            let mainSpan = GMSStyleSpan(color: .systemBlue)
+            polyline.spans = [mainSpan]
         case .walking:
             polyline.strokeColor = .systemGreen
-            polyline.strokeWidth = 4.0
-            // Create dashed pattern using GMSStyleSpan
+            polyline.strokeWidth = 5.0
+            // Create dashed pattern for walking
             let solidSpan = GMSStyleSpan(color: .systemGreen, segments: 10)
             let gapSpan = GMSStyleSpan(color: .clear, segments: 5)
             polyline.spans = [solidSpan, gapSpan]
         case .bicycling:
             polyline.strokeColor = .systemOrange
-            polyline.strokeWidth = 4.0
-            // Create different dash pattern using GMSStyleSpan
+            polyline.strokeWidth = 5.0
+            // Create different dash pattern for bicycling
             let solidSpan = GMSStyleSpan(color: .systemOrange, segments: 15)
             let gapSpan = GMSStyleSpan(color: .clear, segments: 5)
             polyline.spans = [solidSpan, gapSpan]
         case .transit:
             polyline.strokeColor = .systemPurple
             polyline.strokeWidth = 5.0
-            // Create longer dash pattern using GMSStyleSpan
+            // Create longer dash pattern for transit
             let solidSpan = GMSStyleSpan(color: .systemPurple, segments: 20)
             let gapSpan = GMSStyleSpan(color: .clear, segments: 10)
             polyline.spans = [solidSpan, gapSpan]
         }
+        
+        // Add debug logging
+        print("🗺️ DEBUG: Configured polyline - Color: \(polyline.strokeColor), Width: \(polyline.strokeWidth), ZIndex: \(polyline.zIndex)")
     }
 }
 
@@ -130,6 +139,11 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     // Google Maps specific properties
     @Published var mapView: GMSMapView?
     @Published var camera: GMSCameraPosition = GMSCameraPosition.camera(withLatitude: 37.7749, longitude: -122.4194, zoom: 15.0)
+    
+    // Performance optimization properties
+    private var _hasPendingCameraUpdate = false
+    var isUpdatingCamera = false
+    private var lastUserGestureUpdate = Date()
     
     private let locationManager = CLLocationManager()
     private let apiKey = GoogleMapsConfiguration.shared.getAPIKey()
@@ -198,12 +212,40 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     
     /// Update camera position
     func updateCamera(_ cameraPosition: GMSCameraPosition, animated: Bool = false) {
+        isUpdatingCamera = true
+        _hasPendingCameraUpdate = true
         camera = cameraPosition
         if animated {
             mapView?.animate(to: cameraPosition)
         } else {
             mapView?.camera = cameraPosition
         }
+        
+        // Small delay to prevent immediate feedback
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.isUpdatingCamera = false
+        }
+    }
+    
+    /// Handle camera updates from user gestures (throttled for performance)
+    func updateCameraFromUserGesture(_ cameraPosition: GMSCameraPosition) {
+        let now = Date()
+        
+        // Throttle user gesture updates to every 100ms for smooth performance
+        guard now.timeIntervalSince(lastUserGestureUpdate) > 0.1 else { return }
+        
+        lastUserGestureUpdate = now
+        camera = cameraPosition
+    }
+    
+    /// Clear pending camera update flag
+    func clearPendingCameraUpdate() {
+        _hasPendingCameraUpdate = false
+    }
+    
+    /// Check if there's a pending camera update
+    var hasPendingCameraUpdate: Bool {
+        return _hasPendingCameraUpdate
     }
     
     /// Set the map view reference
@@ -446,9 +488,15 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     }
     
     
-    /// Get alternative routes for better route selection
+    /// Get alternative routes for better route selection (with caching)
     func getAlternativeRoutes(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, transportMode: TransportMode = .driving) async throws -> [GoogleMapsRoute] {
         print("🔄 Fetching alternative routes using Google Routes API...")
+        
+        // Check cache first for performance
+        if let cachedRoute = RouteCache.shared.getCachedRoute(from: source, to: destination, transportMode: transportMode) {
+            print("✅ Using cached route")
+            return [cachedRoute]
+        }
         
         // Create URL for Google Routes API with API key parameter
         let baseURL = "https://routes.googleapis.com/directions/v2:computeRoutes?key=\(apiKey)"
@@ -535,16 +583,22 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
             }
             
             print("✅ Retrieved \(routes.count) alternative routes")
+            
+            // Cache the first route if available
+            if let firstRoute = routes.first {
+                RouteCache.shared.cacheRoute(firstRoute, from: source, to: destination, transportMode: transportMode)
+            }
+            
             return routes
             
         } catch {
             // Fallback to manual JSON parsing if structured decoding fails
             print("⚠️ Structured decoding failed, falling back to manual parsing")
-            return try parseRoutesManually(data, transportMode: transportMode)
+            return try parseRoutesManually(data, from: source, to: destination, transportMode: transportMode)
         }
     }
     
-    private func parseRoutesManually(_ data: Data, transportMode: TransportMode) throws -> [GoogleMapsRoute] {
+    private func parseRoutesManually(_ data: Data, from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, transportMode: TransportMode) throws -> [GoogleMapsRoute] {
         guard let response = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let routesArray = response["routes"] as? [[String: Any]] else {
             throw NSError(domain: "GoogleRoutesError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])
@@ -573,6 +627,11 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
             routes.append(googleRoute)
         }
         
+        // Cache the first route if available
+        if let firstRoute = routes.first {
+            RouteCache.shared.cacheRoute(firstRoute, from: source, to: destination, transportMode: transportMode)
+        }
+        
         return routes
     }
     
@@ -580,6 +639,35 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
         currentRoute = nil
         isNavigating = false
         print("🛑 Navigation stopped")
+    }
+    
+    /// Force the map to update its polylines and display
+    func forceMapUpdate() {
+        // Trigger a property update that will cause SwiftUI to refresh the map
+        objectWillChange.send()
+        
+        // If we have a current route, ensure it's properly displayed
+        if let route = currentRoute {
+            print("🔄 Forcing map update with current route")
+            // Force the polyline to be re-added to the map
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let mapView = self.mapView else { return }
+                
+                // Remove existing polyline and re-add it
+                route.polyline.map = nil
+                
+                // Re-configure polyline styling
+                route.polyline.strokeColor = UIColor.systemBlue
+                route.polyline.strokeWidth = 8.0
+                route.polyline.zIndex = 1000
+                route.polyline.geodesic = true
+                
+                // Add back to map
+                route.polyline.map = mapView
+                
+                print("✅ Forced polyline update completed")
+            }
+        }
     }
     
     // MARK: - Helper Methods

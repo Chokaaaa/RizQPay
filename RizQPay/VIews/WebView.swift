@@ -26,9 +26,6 @@ struct WebView: UIViewRepresentable {
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.suppressesIncrementalRendering = false // Allow incremental rendering
         
-        // Process pool optimization - reuse processes
-        configuration.processPool = WebKitPreloader.shared.getProcessPool()
-        
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
