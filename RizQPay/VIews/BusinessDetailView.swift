@@ -7,13 +7,14 @@
 
 import SwiftUI
 
-// MARK: - Business Detail Views
+// MARK: - Business Detail Views (Google Maps Compatible)
 struct BusinessDetailView: View {
     let business: BusinessLocation
-    let locationManager: LocationManager
+    let locationManager: GoogleMapsLocationManager
     @Environment(\.dismiss) private var dismiss
     @State private var showingNavigationAlert = false
     @State private var navigationMessage = ""
+    @State private var isStartingNavigation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -23,26 +24,46 @@ struct BusinessDetailView: View {
                     BusinessInfoSection(business: business)
                     BusinessContactSection(business: business)
                     
+                    if isStartingNavigation {
+                        VStack(spacing: 12) {
+                            ProgressView("Starting navigation...")
+                            Text("Calculating route to \(business.title)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                    }
+                    
                     Spacer(minLength: 50)
                 }
                 .padding()
             }
             
-            // Button outside scroll view at bottom
-            Button(action: {
-                startNavigation()
-            }) {
-                HStack {
-                    Image(systemName: "location.fill")
-                    Text("Get Directions")
+            // Navigation Controls at bottom
+            VStack(spacing: 12) {
+                // Get Directions Button
+                Button(action: {
+                    startNavigation()
+                }) {
+                    HStack {
+                        Image(systemName: isStartingNavigation ? "location.circle" : "location.fill")
+                        Text(isStartingNavigation ? "Starting Navigation..." : "Get Directions")
+                        
+                        if isStartingNavigation {
+                            Spacer()
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(locationManager.isLocationAvailable() && !isStartingNavigation ? Color.blue : Color.gray)
+                    .cornerRadius(12)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(locationManager.isLocationAvailable() ? Color.blue : Color.gray)
-                .cornerRadius(12)
+                .disabled(!locationManager.isLocationAvailable() || isStartingNavigation)
             }
-            .disabled(!locationManager.isLocationAvailable())
             .padding()
         }
         .navigationTitle(business.title)
@@ -61,15 +82,47 @@ struct BusinessDetailView: View {
             return
         }
         
-        guard locationManager.location != nil else {
+        guard let userLocation = locationManager.location else {
             navigationMessage = "Unable to get your current location. Please make sure location services are enabled."
             showingNavigationAlert = true
             return
         }
         
-        // Start navigation - this will now provide detailed logging
-        locationManager.startNavigation(to: business)
-        dismiss()
+        isStartingNavigation = true
+        
+        Task {
+            do {
+                // Get the first available route (driving mode by default)
+                let routes = try await locationManager.getAlternativeRoutes(
+                    from: userLocation.coordinate,
+                    to: business.coordinate,
+                    transportMode: .driving
+                )
+                
+                await MainActor.run {
+                    if let firstRoute = routes.first {
+                        // Set the route and start navigation
+                        locationManager.currentRoute = firstRoute
+                        locationManager.isNavigating = true
+                        locationManager.updateCameraForRoute(firstRoute)
+                        
+                        // Close the detail view to show the map
+                        dismiss()
+                    } else {
+                        isStartingNavigation = false
+                        navigationMessage = "Unable to find a route to this location. Please try again."
+                        showingNavigationAlert = true
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    print("Error starting navigation: \(error.localizedDescription)")
+                    isStartingNavigation = false
+                    navigationMessage = "Unable to start navigation. Please try again."
+                    showingNavigationAlert = true
+                }
+            }
+        }
     }
 }
 
@@ -120,9 +173,6 @@ struct BusinessContactSection: View {
                 icon: "phone",
                 text: "+971 50 123 4567"
             )
-            
-            
-            
         }
     }
 }

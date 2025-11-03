@@ -15,7 +15,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
+        // Initialize Google Maps with the existing API key
         GMSServices.provideAPIKey("AIzaSyDzutXe4rbv6nycRRJaSSSVQz_egFL0oEc")
+        
+        // Initialize WebKit preloader for faster WebView loading
+        WebKitPreloader.shared.preloadWebKit()
+        
+        print("🚀 DEBUG: App launched with Google Maps and WebKit preloader initialized")
         return true
     }
 }

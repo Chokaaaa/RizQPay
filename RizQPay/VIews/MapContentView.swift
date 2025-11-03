@@ -6,14 +6,14 @@
 //
 
 import SwiftUI
-import MapKit
+import GoogleMaps
 import CoreLocation
 
-// MARK: - Map Content View
-struct MapContentView: View {
-    @ObservedObject var locationManager: LocationManager
+// MARK: - Google Maps Content View
+struct GoogleMapsContentView: View {
+    @ObservedObject var locationManager: GoogleMapsLocationManager
     
-    // Make businesses static to prevent re-creation and flickering
+    // Static business data to prevent re-creation
     private static let businessData: [BusinessLocation] = [
         BusinessLocation(
             coordinate: CLLocationCoordinate2D(latitude: 43.224868760757076, longitude: 76.95487727263975),
@@ -25,27 +25,10 @@ struct MapContentView: View {
     private var businesses: [BusinessLocation] { Self.businessData }
     
     var body: some View {
-        ZStack {
-            Map(
-                coordinateRegion: $locationManager.region,
-                showsUserLocation: true,
-                userTrackingMode: .constant(.none),
-                annotationItems: businesses
-            ) { business in
-                MapAnnotation(coordinate: business.coordinate, anchorPoint: CGPoint(x: 0.5, y: 1.0)) {
-                    NavigationLink(destination: BusinessDetailView(business: business, locationManager: locationManager)) {
-                        CustomMapMarker(business: business)
-                    }
-                    .buttonStyle(PlainButtonStyle()) // Remove button styling that might cause flicker
-                }
-            }
-            .mapStyle(.standard(elevation: .flat)) // Use flat elevation for better performance
-            
-            // Add polyline overlay if navigation is active
-            if let route = locationManager.currentRoute {
-                RouteOverlayView(route: route, region: $locationManager.region)
-            }
-        }
+        GoogleMapsView(
+            locationManager: locationManager,
+            businesses: businesses
+        )
         .ignoresSafeArea()
         .onAppear {
             locationManager.requestLocation()
@@ -53,99 +36,181 @@ struct MapContentView: View {
     }
 }
 
-// MARK: - Custom Map Marker (inline to prevent flickering)
-struct CustomMapMarker: View {
-    let business: BusinessLocation
+// MARK: - Google Maps UIViewRepresentable
+struct GoogleMapsView: UIViewRepresentable {
+    @ObservedObject var locationManager: GoogleMapsLocationManager
+    let businesses: [BusinessLocation]
     
-    var body: some View {
-        ZStack {
-            // Optimized marker design for better performance
-            VStack(spacing: 0) {
-                // Main marker circle
-                ZStack {
-                    // White background circle with minimal shadow
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
-                        )
-                    
-                    // Business image
-                    Image(business.imageName)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                }
-                .shadow(color: .black.opacity(0.15), radius: 3, x: 0, y: 2)
-                
-                // Simple triangle pointer
-                MarkerTriangle()
-                    .fill(Color.white)
-                    .frame(width: 16, height: 10)
-                    .overlay(
-                        MarkerTriangle()
-                            .stroke(Color.black.opacity(0.1), lineWidth: 0.5)
-                    )
-                    .offset(y: -2)
-            }
-        }
-        .drawingGroup() // This renders the view as a single layer for better performance
-    }
-}
-
-struct MarkerTriangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-        return path
-    }
-}
-
-// MARK: - Route Overlay View for Route Display
-struct RouteOverlayView: UIViewRepresentable {
-    let route: MKRoute
-    @Binding var region: MKCoordinateRegion
-    
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView()
-        mapView.isUserInteractionEnabled = false
-        mapView.backgroundColor = .clear
+    func makeUIView(context: Context) -> GMSMapView {
+        let mapView = GMSMapView()
+        
+        // Configure map appearance
+        mapView.isMyLocationEnabled = true
+        mapView.settings.myLocationButton = false // We'll use our custom button
+        mapView.settings.compassButton = false
+        mapView.mapType = .normal
+        
+        // Set the map view reference in location manager
+        locationManager.setMapView(mapView)
+        
+        // Set initial camera position
+        mapView.camera = locationManager.camera
+        
+        // Set delegate
         mapView.delegate = context.coordinator
+        
+        // Add business markers
+        addBusinessMarkers(to: mapView)
+        
         return mapView
     }
     
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-        // Sync the map view region with the SwiftUI Map
-        uiView.setRegion(region, animated: false)
+    func updateUIView(_ mapView: GMSMapView, context: Context) {
+        // Update camera position
+        if mapView.camera.target.latitude != locationManager.camera.target.latitude ||
+           mapView.camera.target.longitude != locationManager.camera.target.longitude ||
+           mapView.camera.zoom != locationManager.camera.zoom {
+            mapView.camera = locationManager.camera
+        }
         
-        // Remove existing overlays
-        uiView.removeOverlays(uiView.overlays)
-        
-        // Add the new route polyline
-        uiView.addOverlay(route.polyline)
+        // Update route polyline
+        updateRoute(on: mapView)
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(self)
     }
     
-    class Coordinator: NSObject, MKMapViewDelegate {
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let polyline = overlay as? MKPolyline {
-                let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = .systemBlue
-                renderer.lineWidth = 4.0
-                renderer.lineCap = .round
-                renderer.lineJoin = .round
-                return renderer
+    private func addBusinessMarkers(to mapView: GMSMapView) {
+        // Clear existing markers
+        mapView.clear()
+        
+        for business in businesses {
+            let marker = GMSMarker()
+            marker.position = business.coordinate
+            marker.title = business.title
+            marker.userData = business
+            marker.map = mapView
+            
+            // Create custom marker icon
+            if let markerImage = createCustomMarker(for: business) {
+                marker.icon = markerImage
             }
-            return MKOverlayRenderer(overlay: overlay)
         }
+        
+        // Re-add route if it exists
+        updateRoute(on: mapView)
+    }
+    
+    private func updateRoute(on mapView: GMSMapView) {
+        // Remove existing polylines
+        mapView.clear()
+        
+        // Re-add business markers
+        for business in businesses {
+            let marker = GMSMarker()
+            marker.position = business.coordinate
+            marker.title = business.title
+            marker.userData = business
+            marker.map = mapView
+            
+            if let markerImage = createCustomMarker(for: business) {
+                marker.icon = markerImage
+            }
+        }
+        
+        // Add route polyline if navigation is active
+        if let route = locationManager.currentRoute {
+            route.polyline.map = mapView
+        }
+    }
+    
+    private func createCustomMarker(for business: BusinessLocation) -> UIImage? {
+        let markerSize = CGSize(width: 80, height: 90)
+        
+        UIGraphicsBeginImageContextWithOptions(markerSize, false, 0)
+        defer { UIGraphicsEndImageContext() }
+        
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        
+        // Draw white circle with shadow
+        let circleRect = CGRect(x: 10, y: 5, width: 60, height: 60)
+        
+        // Shadow
+        context.setShadow(offset: CGSize(width: 0, height: 2), blur: 3, color: UIColor.black.withAlphaComponent(0.3).cgColor)
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: circleRect)
+        
+        // Border
+        context.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
+        context.setLineWidth(1)
+        context.strokeEllipse(in: circleRect)
+        
+        // Business image
+        if let businessImage = UIImage(named: business.imageName) {
+            let imageRect = circleRect.insetBy(dx: 5, dy: 5)
+            
+            // Clip to circle
+            context.saveGState()
+            context.addEllipse(in: imageRect)
+            context.clip()
+            businessImage.draw(in: imageRect)
+            context.restoreGState()
+        }
+        
+        // Draw triangle pointer
+        let trianglePath = UIBezierPath()
+        trianglePath.move(to: CGPoint(x: markerSize.width / 2, y: 75))
+        trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 - 8, y: 65))
+        trianglePath.addLine(to: CGPoint(x: markerSize.width / 2 + 8, y: 65))
+        trianglePath.close()
+        
+        context.setFillColor(UIColor.white.cgColor)
+        context.addPath(trianglePath.cgPath)
+        context.fillPath()
+        
+        context.setStrokeColor(UIColor.black.withAlphaComponent(0.1).cgColor)
+        context.addPath(trianglePath.cgPath)
+        context.strokePath()
+        
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+    
+    class Coordinator: NSObject, GMSMapViewDelegate {
+        let parent: GoogleMapsView
+        
+        init(_ parent: GoogleMapsView) {
+            self.parent = parent
+        }
+        
+        func mapView(_ mapView: GMSMapView, didTap marker: GMSMarker) -> Bool {
+            guard let business = marker.userData as? BusinessLocation else {
+                return false
+            }
+            
+            // Handle marker tap - navigate to business detail
+            DispatchQueue.main.async {
+                // We need to present the business detail view
+                // This will be handled by the NavigationStack in the parent view
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("BusinessMarkerTapped"),
+                    object: business
+                )
+            }
+            
+            return true
+        }
+        
+        @MainActor func mapView(_ mapView: GMSMapView, didChange position: GMSCameraPosition) {
+            // Update location manager camera
+            parent.locationManager.camera = position
+        }
+    }
+}
+
+// MARK: - Business Detail Navigation Helper
+extension GoogleMapsContentView {
+    func navigateToBusinessDetail(_ business: BusinessLocation) {
+        // This will be handled by the parent MapView
     }
 }

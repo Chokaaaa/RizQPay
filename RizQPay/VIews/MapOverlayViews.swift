@@ -105,7 +105,7 @@ struct NavigationControlsBar: View {
 }
 
 struct MapOverlayView: View {
-    @ObservedObject var locationManager: LocationManager
+    @ObservedObject var locationManager: GoogleMapsLocationManager
     let onProfileTap: () -> Void
     let onCameraTap: () -> Void
     let onLocationTap: () -> Void
