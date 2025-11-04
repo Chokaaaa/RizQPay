@@ -189,22 +189,24 @@ struct ProfileMenuItem: View {
     }
     
     var body: some View {
-        if let destinationType = destinationType {
-            NavigationLink(destination: destinationView(for: destinationType)) {
-                menuItemContent
+        VStack(spacing: 0) {
+            if let destinationType = destinationType {
+                NavigationLink(destination: destinationView(for: destinationType)) {
+                    menuItemContent
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                Button(action: {
+                    print("\(title) tapped")
+                }) {
+                    menuItemContent
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
-        } else {
-            Button(action: {
-                print("\(title) tapped")
-            }) {
-                menuItemContent
-            }
-            .buttonStyle(PlainButtonStyle())
+            
+            Divider()
+                .padding(.leading, 59)
         }
-        
-        Divider()
-            .padding(.leading, 59)
     }
     
     @ViewBuilder
@@ -261,6 +263,8 @@ struct ProfileMenuItem: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -396,84 +400,43 @@ struct PlateNumberRow: View {
 
 struct AddNewPlateNumberView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedColor: CarColor = .white
+    @State private var selectedColor: CarColor? = nil
     @State private var carMake = ""
     @State private var carModel = ""
     @State private var licensePlate = ""
-    @State private var showingMakeSheet = false
+    @State private var showingMakeSelection = false
     @State private var showingModelSheet = false
     @State private var showingLicensePlateSheet = false
+    @State private var isColorCardExpanded = true
+    @State private var isMakeCardExpanded = false
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 32) {
-                    // Color Selection
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("*Color")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        
-                        VStack(spacing: 16) {
-                            // First row of colors
-                            HStack(spacing: 20) {
-                                ColorSelectionButton(color: .white, title: "White", isSelected: selectedColor == .white) {
-                                    selectedColor = .white
-                                }
-                                ColorSelectionButton(color: .silver, title: "Silver", isSelected: selectedColor == .silver) {
-                                    selectedColor = .silver
-                                }
-                                ColorSelectionButton(color: .gray, title: "Grey", isSelected: selectedColor == .gray) {
-                                    selectedColor = .gray
-                                }
-                                ColorSelectionButton(color: .black, title: "Black", isSelected: selectedColor == .black) {
-                                    selectedColor = .black
-                                }
-                                ColorSelectionButton(color: .blue, title: "Blue", isSelected: selectedColor == .blue) {
-                                    selectedColor = .blue
-                                }
-                            }
-                            
-                            // Second row of colors
-                            HStack(spacing: 20) {
-                                ColorSelectionButton(color: .red, title: "Red", isSelected: selectedColor == .red) {
-                                    selectedColor = .red
-                                }
-                                ColorSelectionButton(color: .green, title: "Green", isSelected: selectedColor == .green) {
-                                    selectedColor = .green
-                                }
-                                ColorSelectionButton(color: .yellow, title: "Yellow", isSelected: selectedColor == .yellow) {
-                                    selectedColor = .yellow
-                                }
-                                ColorSelectionButton(color: .orange, title: "Orange", isSelected: selectedColor == .orange) {
-                                    selectedColor = .orange
-                                }
-                                ColorSelectionButton(color: .other, title: "Other", isSelected: selectedColor == .other) {
-                                    selectedColor = .other
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 16)
-                    }
-                    .background(Color.white)
-                    .cornerRadius(15)
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                VStack(spacing: 16) {
+                    // Color Selection - Controlled expansion
+                    ColorSelectionCard(
+                        selectedColor: $selectedColor,
+                        isExpanded: $isColorCardExpanded,
+                        isMakeCardExpanded: $isMakeCardExpanded
+                    )
                     
-                    // Make
-                    CarDetailRow(
-                        title: "*Make",
-                        value: carMake,
-                        hasValue: !carMake.isEmpty
-                    ) {
-                        showingMakeSheet = true
-                    }
+                    // Make Selection - Controlled expansion
+                    MakeSelectionCard(
+                        selectedMake: $carMake,
+                        isExpanded: $isMakeCardExpanded,
+                        onTap: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isMakeCardExpanded.toggle()
+                                if isMakeCardExpanded {
+                                    isColorCardExpanded = false
+                                }
+                            }
+                        },
+                        onSearchTap: {
+                            showingMakeSelection = true
+                        }
+                    )
                     
                     // Model
                     CarDetailRow(
@@ -499,7 +462,7 @@ struct AddNewPlateNumberView: View {
                     Button(action: {
                         // Handle saving car details
                         print("Saving car details:")
-                        print("Color: \(selectedColor.rawValue)")
+                        print("Color: \(selectedColor?.rawValue ?? "None")")
                         print("Make: \(carMake)")
                         print("Model: \(carModel)")
                         print("License Plate: \(licensePlate)")
@@ -527,8 +490,8 @@ struct AddNewPlateNumberView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingMakeSheet) {
-                CarMakeSelectionView(selectedMake: $carMake)
+            .sheet(isPresented: $showingMakeSelection) {
+                CarMakeSearchView(selectedMake: $carMake)
             }
             .sheet(isPresented: $showingModelSheet) {
                 CarModelSelectionView(selectedModel: $carModel)
@@ -540,9 +503,13 @@ struct AddNewPlateNumberView: View {
     }
     
     private var isFormValid: Bool {
-        return !carMake.isEmpty && !carModel.isEmpty && !licensePlate.isEmpty
+        return selectedColor != nil && !carMake.isEmpty && !carModel.isEmpty && !licensePlate.isEmpty
     }
 }
+
+
+
+// MARK: - Car Selection Components
 
 enum CarColor: String, CaseIterable {
     case white = "White"
@@ -572,6 +539,280 @@ enum CarColor: String, CaseIterable {
     }
 }
 
+struct CarMake {
+    let name: String
+    let imageName: String
+}
+
+struct ColorSelectionCard: View {
+    @Binding var selectedColor: CarColor?
+    @Binding var isExpanded: Bool
+    @Binding var isMakeCardExpanded: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("*Color")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                if let color = selectedColor {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(color.displayColor)
+                            .frame(width: 20, height: 20)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(.systemGray5), lineWidth: color == .white ? 1 : 0)
+                            )
+                        Text(color.rawValue)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    }
+                } else {
+                    Text("Add")
+                        .font(.body)
+                        .foregroundColor(.mint)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                    if isExpanded {
+                        isMakeCardExpanded = false
+                    }
+                }
+            }
+            
+            // Expandable content
+            if isExpanded {
+                VStack(spacing: 16) {
+                    Divider()
+                        .padding(.horizontal, 20)
+                    
+                    VStack(spacing: 16) {
+                        // First row of colors
+                        HStack(spacing: 20) {
+                            ColorSelectionButton(color: .white, title: "White", isSelected: selectedColor == .white) {
+                                selectedColor = .white
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .silver, title: "Silver", isSelected: selectedColor == .silver) {
+                                selectedColor = .silver
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .gray, title: "Grey", isSelected: selectedColor == .gray) {
+                                selectedColor = .gray
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .black, title: "Black", isSelected: selectedColor == .black) {
+                                selectedColor = .black
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .blue, title: "Blue", isSelected: selectedColor == .blue) {
+                                selectedColor = .blue
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                        }
+                        
+                        // Second row of colors
+                        HStack(spacing: 20) {
+                            ColorSelectionButton(color: .red, title: "Red", isSelected: selectedColor == .red) {
+                                selectedColor = .red
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .green, title: "Green", isSelected: selectedColor == .green) {
+                                selectedColor = .green
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .yellow, title: "Yellow", isSelected: selectedColor == .yellow) {
+                                selectedColor = .yellow
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .orange, title: "Orange", isSelected: selectedColor == .orange) {
+                                selectedColor = .orange
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                            ColorSelectionButton(color: .other, title: "Other", isSelected: selectedColor == .other) {
+                                selectedColor = .other
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded = false
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+    }
+}
+
+struct MakeSelectionCard: View {
+    @Binding var selectedMake: String
+    @Binding var isExpanded: Bool
+    let onTap: () -> Void
+    let onSearchTap: () -> Void
+    
+    // Car makes data with real asset names based on the image you showed
+    private let carMakes = [
+        CarMake(name: "Nissan", imageName: "nissan-logo"),
+        CarMake(name: "Toyota", imageName: "toyota-logo"),
+        CarMake(name: "BMW", imageName: "bmw-logo"),
+        CarMake(name: "Mercedes", imageName: "mercedes-logo"),
+        CarMake(name: "Audi", imageName: "audi-logo"),
+        CarMake(name: "Ford", imageName: "ford-logo"),
+        CarMake(name: "Honda", imageName: "honda-logo"),
+        CarMake(name: "Hyundai", imageName: "hyundai-logo")
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("*Make")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                if !selectedMake.isEmpty {
+                    Text(selectedMake)
+                        .font(.body)
+                        .foregroundColor(.mint)
+                } else {
+                    Text("Add")
+                        .font(.body)
+                        .foregroundColor(.mint)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .onTapGesture {
+                onTap()
+            }
+            
+            // Expandable content
+            if isExpanded {
+                VStack(spacing: 20) {
+                    Divider()
+                        .padding(.horizontal, 20)
+                    
+                    // Search button
+                    Button(action: onSearchTap) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            Text("Search make")
+                                .foregroundColor(.gray)
+                                .font(.body)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(25)
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    // Car makes grid - 2 rows exactly like in the image
+                    VStack(spacing: 15) {
+                        // First row
+                        HStack(spacing: 15) {
+                            ForEach(Array(carMakes.prefix(4)), id: \.name) { make in
+                                CarMakeButton(make: make) {
+                                    selectedMake = make.name
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isExpanded = false
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Second row
+                        HStack(spacing: 15) {
+                            ForEach(Array(carMakes.suffix(4)), id: \.name) { make in
+                                CarMakeButton(make: make) {
+                                    selectedMake = make.name
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isExpanded = false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+    }
+}
+
+struct CarMakeButton: View {
+    let make: CarMake
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                // Car logo image from assets
+                Image(make.imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 40, height: 40)
+                    .background(Color.clear)
+                
+                Text(make.name)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
+            .padding(.vertical, 12)
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct ColorSelectionButton: View {
     let color: CarColor
     let title: String
@@ -582,6 +823,12 @@ struct ColorSelectionButton: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 ZStack {
+                    // Reserve space for the border by always having a 54x54 frame
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: 54, height: 54)
+                    
+                    // Main color circle
                     Circle()
                         .fill(color.displayColor)
                         .frame(width: 50, height: 50)
@@ -590,31 +837,16 @@ struct ColorSelectionButton: View {
                                 .stroke(Color(.systemGray5), lineWidth: color == .white ? 1 : 0)
                         )
                     
-                    // Only show selection indicators when this color is selected
-                    if isSelected {
-                        if color == .other {
-                            // For "Other" color when selected: border + checkmark
-                            Circle()
-                                .stroke(Color.mint, lineWidth: 2)
-                                .frame(width: 50, height: 50)
-                            
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.mint)
-                                .fontWeight(.bold)
-                        } else {
-                            // For regular colors when selected: just border
-                            Circle()
-                                .stroke(Color.mint, lineWidth: 3)
-                                .frame(width: 54, height: 54)
-                        }
-                    }
+                    // Selection border - always present but transparent when not selected
+                    Circle()
+                        .stroke(isSelected ? Color.mint : Color.clear, lineWidth: 3)
+                        .frame(width: 50, height: 50)
                     
-                    // Special case: "Other" always shows border, but only checkmark when selected
-                    if color == .other && !isSelected {
-                        Circle()
-                            .stroke(Color.mint, lineWidth: 2)
-                            .frame(width: 50, height: 50)
-                    }
+                    // Checkmark - always present but transparent when not selected
+                    Image(systemName: "checkmark")
+                        .foregroundColor(isSelected ? (color == .white || color == .yellow ? .mint : .white) : .clear)
+                        .fontWeight(.bold)
+                        .font(.system(size: 16))
                 }
                 
                 Text(title)
@@ -663,6 +895,87 @@ struct CarDetailRow: View {
 }
 
 // MARK: - Sheet Views
+struct CarMakeSearchView: View {
+    @Binding var selectedMake: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    
+    // Full list of car makes for search
+    private let allCarMakes = [
+        "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler",
+        "Dodge", "Ford", "Genesis", "GMC", "Honda", "Hyundai", "Infiniti",
+        "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Lincoln", "Mazda",
+        "Mercedes-Benz", "Mini", "Mitsubishi", "Nissan", "Porsche", "Ram",
+        "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
+    ]
+    
+    private var filteredMakes: [String] {
+        if searchText.isEmpty {
+            return allCarMakes
+        } else {
+            return allCarMakes.filter { $0.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Search bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField("Search make", text: $searchText)
+                        .textFieldStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(25)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
+                // Car makes list
+                List {
+                    ForEach(filteredMakes, id: \.self) { make in
+                        Button(action: {
+                            selectedMake = make
+                            dismiss()
+                        }) {
+                            HStack {
+                                Text(make)
+                                    .foregroundColor(.primary)
+                                    .font(.body)
+                                
+                                Spacer()
+                                
+                                if selectedMake == make {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.mint)
+                                        .font(.body)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .listStyle(.plain)
+            }
+            .navigationTitle("Select Make")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
 struct CarMakeSelectionView: View {
     @Binding var selectedMake: String
     @Environment(\.dismiss) private var dismiss
