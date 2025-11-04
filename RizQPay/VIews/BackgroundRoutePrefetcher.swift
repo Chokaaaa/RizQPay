@@ -75,13 +75,8 @@ class BackgroundRoutePrefetcher {
         // Note: In production, you might want to use a singleton or dependency injection
         let locationManager = GoogleMapsLocationManager()
         
-        // Perform prefetch with reduced concurrency for background
-        await RouteCache.shared.performBackgroundPrefetch(
-            from: location,
-            to: businesses,
-            locationManager: locationManager
-        )
-        
+        // Background prefetching disabled - RouteCache removed
+        print("⚠️ Background route prefetching disabled - RouteCache has been removed")
         print("✅ Background route prefetch completed")
     }
 }

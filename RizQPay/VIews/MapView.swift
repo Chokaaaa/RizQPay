@@ -52,10 +52,11 @@ struct MapView: View {
                 }
             }
             .onReceive(locationManager.$currentRoute) { currentRoute in
-                // Force map update whenever currentRoute changes
+                // Optimize map updates for energy efficiency
                 if currentRoute != nil {
-                    print("🗺️ Current route changed, forcing map update")
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    print("🗺️ Current route changed, updating map efficiently")
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(200))
                         locationManager.forceMapUpdate()
                     }
                 }
@@ -75,10 +76,10 @@ struct MapView: View {
                 }
             }
             .onChange(of: showingBusinessDetail) { isShowing in
-                // When BusinessDetailView is dismissed, force map to update
+                // When BusinessDetailView is dismissed, update map efficiently
                 if !isShowing {
-                    // Small delay to ensure the view is fully dismissed before updating
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
                         locationManager.forceMapUpdate()
                     }
                 }
@@ -109,17 +110,12 @@ extension MapView {
     
     /// Trigger background prefetching of routes to all business locations
     private func triggerBackgroundPrefetch(from userLocation: CLLocationCoordinate2D) {
-        // Get the business locations from GoogleMapsContentView
+        // Background prefetching disabled for energy efficiency
         let businesses = GoogleMapsContentView.getBusinessLocations()
+        print("⚡ Background prefetch disabled for energy efficiency - routes will be calculated on demand for \(businesses.count) business locations")
         
-        // Start background prefetch
-        RouteCache.shared.prefetchRoutes(
-            from: userLocation,
-            to: businesses,
-            locationManager: locationManager
-        )
-        
-        print("🚀 Started background prefetch for \(businesses.count) business locations")
+        // Stop continuous location updates to save energy once we have initial location
+        locationManager.stopUpdatingLocation()
     }
     
     /// Store user location for background tasks

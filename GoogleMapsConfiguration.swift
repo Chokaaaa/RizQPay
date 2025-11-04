@@ -30,10 +30,19 @@ class GoogleMapsConfiguration {
     
     /// Initialize Google Maps SDK - call this in AppDelegate
     func configure() {
+        // Only configure if not already done
+        guard !isConfigured else { 
+            print("🗺️ DEBUG: Google Maps already configured")
+            return 
+        }
+        
         GMSServices.provideAPIKey(apiKey)
+        isConfigured = true
         print("🗺️ DEBUG: Google Maps SDK configured with API key")
         print("🛣️ DEBUG: Using Google Routes API (Directions API deprecated)")
     }
+    
+    private var isConfigured = false
     
     /// Get the API key for Routes API requests
     func getAPIKey() -> String {

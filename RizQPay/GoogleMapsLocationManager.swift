@@ -172,10 +172,16 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     override init() {
         super.init()
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10
         
-        print("🗺️ GoogleMapsLocationManager initialized")
+        // Energy-efficient location settings
+        locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters // More energy efficient
+        locationManager.distanceFilter = 50 // Reduce frequency of updates
+        
+        // Pause location updates when possible to save energy
+        locationManager.pausesLocationUpdatesAutomatically = true
+        locationManager.allowsBackgroundLocationUpdates = false
+        
+        print("🗺️ GoogleMapsLocationManager initialized with energy-efficient settings")
     }
     
     func requestLocation() {
@@ -187,8 +193,8 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
             print("🔒 Requesting location permission...")
             locationManager.requestWhenInUseAuthorization()
         case .authorizedWhenInUse, .authorizedAlways:
-            print("✅ Location permission granted, starting location updates...")
-            locationManager.startUpdatingLocation()
+            print("✅ Location permission granted, getting location...")
+            // Use requestLocation() instead of continuous updates for better energy efficiency
             locationManager.requestLocation()
         case .denied, .restricted:
             print("❌ Location access denied or restricted")
@@ -199,7 +205,19 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
         }
     }
     
+    /// Start continuous location updates (use sparingly for energy efficiency)
+    func startContinuousLocationUpdates() {
+        guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
+            requestLocation()
+            return
+        }
+        
+        print("🔄 Starting continuous location updates")
+        locationManager.startUpdatingLocation()
+    }
+    
     func stopUpdatingLocation() {
+        print("⏹️ Stopping location updates to conserve energy")
         locationManager.stopUpdatingLocation()
     }
     
@@ -210,29 +228,34 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
         updateCamera(camera, animated: true)
     }
     
-    /// Update camera position
+    /// Update camera position with energy-efficient throttling
     func updateCamera(_ cameraPosition: GMSCameraPosition, animated: Bool = false) {
+        // Prevent excessive camera updates
+        guard !isUpdatingCamera else { return }
+        
         isUpdatingCamera = true
         _hasPendingCameraUpdate = true
         camera = cameraPosition
+        
         if animated {
             mapView?.animate(to: cameraPosition)
         } else {
             mapView?.camera = cameraPosition
         }
         
-        // Small delay to prevent immediate feedback
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // Reset flag after a reasonable delay
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(200))
             self.isUpdatingCamera = false
         }
     }
     
-    /// Handle camera updates from user gestures (throttled for performance)
+    /// Handle camera updates from user gestures (heavily throttled for performance)
     func updateCameraFromUserGesture(_ cameraPosition: GMSCameraPosition) {
         let now = Date()
         
-        // Throttle user gesture updates to every 100ms for smooth performance
-        guard now.timeIntervalSince(lastUserGestureUpdate) > 0.1 else { return }
+        // Increase throttle interval to 250ms for better energy efficiency
+        guard now.timeIntervalSince(lastUserGestureUpdate) > 0.25 else { return }
         
         lastUserGestureUpdate = now
         camera = cameraPosition
@@ -492,11 +515,7 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     func getAlternativeRoutes(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, transportMode: TransportMode = .driving) async throws -> [GoogleMapsRoute] {
         print("🔄 Fetching alternative routes using Google Routes API...")
         
-        // Check cache first for performance
-        if let cachedRoute = RouteCache.shared.getCachedRoute(from: source, to: destination, transportMode: transportMode) {
-            print("✅ Using cached route")
-            return [cachedRoute]
-        }
+        // Directly fetch routes without caching
         
         // Create URL for Google Routes API with API key parameter
         let baseURL = "https://routes.googleapis.com/directions/v2:computeRoutes?key=\(apiKey)"
@@ -584,11 +603,6 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
             
             print("✅ Retrieved \(routes.count) alternative routes")
             
-            // Cache the first route if available
-            if let firstRoute = routes.first {
-                RouteCache.shared.cacheRoute(firstRoute, from: source, to: destination, transportMode: transportMode)
-            }
-            
             return routes
             
         } catch {
@@ -627,11 +641,6 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
             routes.append(googleRoute)
         }
         
-        // Cache the first route if available
-        if let firstRoute = routes.first {
-            RouteCache.shared.cacheRoute(firstRoute, from: source, to: destination, transportMode: transportMode)
-        }
-        
         return routes
     }
     
@@ -641,17 +650,20 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
         print("🛑 Navigation stopped")
     }
     
-    /// Force the map to update its polylines and display
+    /// Force the map to update its polylines and display (energy efficient)
     func forceMapUpdate() {
+        // Throttle force updates to prevent excessive energy usage
+        guard !isUpdatingCamera else { return }
+        
         // Trigger a property update that will cause SwiftUI to refresh the map
         objectWillChange.send()
         
         // If we have a current route, ensure it's properly displayed
         if let route = currentRoute {
-            print("🔄 Forcing map update with current route")
-            // Force the polyline to be re-added to the map
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self, let mapView = self.mapView else { return }
+            print("🔄 Forcing map update with current route (energy efficient)")
+            
+            Task { @MainActor in
+                guard let mapView = self.mapView else { return }
                 
                 // Remove existing polyline and re-add it
                 route.polyline.map = nil
@@ -687,20 +699,35 @@ extension GoogleMapsLocationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         
+        // Filter out inaccurate readings to reduce processing
+        guard location.horizontalAccuracy >= 0 && location.horizontalAccuracy <= 100 else {
+            print("⚠️ Ignoring inaccurate location reading: \(location.horizontalAccuracy)m")
+            return
+        }
+        
         print("📍 Location updated: \(location.coordinate)")
         print("   Accuracy: \(location.horizontalAccuracy) meters")
         
         self.location = location
         
-        // Update camera to user location if it's the first time
-        if camera.target.latitude == 37.7749 && camera.target.longitude == -122.4194 {
+        // Update camera to user location only if it's the first time or significantly different
+        let isFirstLocation = camera.target.latitude == 37.7749 && camera.target.longitude == -122.4194
+        
+        if isFirstLocation {
             let newCamera = GMSCameraPosition.camera(withTarget: location.coordinate, zoom: 15.0)
             updateCamera(newCamera, animated: true)
+            
+            // Stop continuous updates after getting initial location to save energy
+            manager.stopUpdatingLocation()
+            print("⚡ Stopped continuous location updates to conserve energy")
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("❌ Failed to get location: \(error.localizedDescription)")
+        
+        // Stop location updates on failure to prevent energy drain
+        manager.stopUpdatingLocation()
         
         if let clError = error as? CLError {
             switch clError.code {

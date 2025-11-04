@@ -15,10 +15,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
-        // Initialize Google Maps with the existing API key
-        GMSServices.provideAPIKey("AIzaSyDzutXe4rbv6nycRRJaSSSVQz_egFL0oEc")
+        // Initialize Google Maps SDK immediately
+        GoogleMapsConfiguration.shared.configure()
         
-        print("🚀 DEBUG: App launched with Google Maps initialized")
+        // Validate API key is properly set
+        if !GoogleMapsConfiguration.shared.validateAPIKey() {
+            print("❌ ERROR: Google Maps API key validation failed!")
+        }
+        
+        print("🚀 DEBUG: App launched - Google Maps SDK initialized")
         return true
     }
 }

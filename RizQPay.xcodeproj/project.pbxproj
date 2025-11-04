@@ -16,7 +16,7 @@
 /* Begin PBXFileReference section */
 		846E5E192EB8FB8500416562 /* RoutesAPIExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutesAPIExample.swift; sourceTree = "<group>"; };
 		846E5E232EB91BA600416562 /* RouteCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteCache.swift; sourceTree = "<group>"; };
-		84FA58182EB8E33C00A4BE7F /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RizQPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		84FA58182EB8E33C00A4BE7F /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = RizQPay.app; path = "/Users/nursultanyelemessov/Desktop/ИП RizQ/Приложение/iOS/RizQPay/build/Debug-iphoneos/RizQPay.app"; sourceTree = "<absolute>"; };
 		84FA584D2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleMapsConfiguration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -44,7 +44,6 @@
 			isa = PBXGroup;
 			children = (
 				84BF162E2E5B951400E1AF87 /* RizQPay */,
-				84FA58182EB8E33C00A4BE7F /* RizQPay.app */,
 				84FA584D2EB8F1DA00A4BE7F /* GoogleMapsConfiguration.swift */,
 				846E5E192EB8FB8500416562 /* RoutesAPIExample.swift */,
 				846E5E232EB91BA600416562 /* RouteCache.swift */,
