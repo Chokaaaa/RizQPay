@@ -409,6 +409,7 @@ struct AddNewPlateNumberView: View {
     @State private var showingLicensePlateSheet = false
     @State private var isColorCardExpanded = true
     @State private var isMakeCardExpanded = false
+    @State private var isModelCardExpanded = false
     
     var body: some View {
         NavigationView {
@@ -430,6 +431,7 @@ struct AddNewPlateNumberView: View {
                                 isMakeCardExpanded.toggle()
                                 if isMakeCardExpanded {
                                     isColorCardExpanded = false
+                                    isModelCardExpanded = false
                                 }
                             }
                         },
@@ -438,14 +440,20 @@ struct AddNewPlateNumberView: View {
                         }
                     )
                     
-                    // Model
-                    CarDetailRow(
-                        title: "*Model",
-                        value: carModel,
-                        hasValue: !carModel.isEmpty
-                    ) {
-                        showingModelSheet = true
-                    }
+                    // Model Selection - Controlled expansion  
+                    ModelSelectionCard(
+                        selectedModel: $carModel,
+                        isExpanded: $isModelCardExpanded,
+                        onTap: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isModelCardExpanded.toggle()
+                                if isModelCardExpanded {
+                                    isColorCardExpanded = false
+                                    isMakeCardExpanded = false
+                                }
+                            }
+                        }
+                    )
                     
                     // License plate
                     CarDetailRow(
@@ -491,10 +499,18 @@ struct AddNewPlateNumberView: View {
                 }
             }
             .sheet(isPresented: $showingMakeSelection) {
-                CarMakeSearchView(selectedMake: $carMake)
-            }
-            .sheet(isPresented: $showingModelSheet) {
-                CarModelSelectionView(selectedModel: $carModel)
+                CarMakeSearchView(
+                    selectedMake: $carMake,
+                    selectedModel: $carModel,
+                    onSelection: { make, model in
+                        carMake = make
+                        carModel = model
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isMakeCardExpanded = false
+                            isModelCardExpanded = false
+                        }
+                    }
+                )
             }
             .sheet(isPresented: $showingLicensePlateSheet) {
                 LicensePlateInputView(licensePlate: $licensePlate)
@@ -813,6 +829,45 @@ struct CarMakeButton: View {
     }
 }
 
+struct ModelSelectionCard: View {
+    @Binding var selectedModel: String
+    @Binding var isExpanded: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("*Model")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                if !selectedModel.isEmpty {
+                    Text(selectedModel)
+                        .font(.body)
+                        .foregroundColor(.mint)
+                } else {
+                    Text("Add")
+                        .font(.body)
+                        .foregroundColor(.mint)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .onTapGesture {
+                onTap()
+            }
+        }
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+    }
+}
+
 struct ColorSelectionButton: View {
     let color: CarColor
     let title: String
@@ -887,26 +942,89 @@ struct CarDetailRow: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .background(Color(.systemGray6))
+            .background(Color.white)
             .cornerRadius(15)
+            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
+// MARK: - Car Data Structure
+struct CarBrandData {
+    static let carBrandModels: [String: [String]] = [
+        "Acura": ["CL", "EL", "ILX", "Integra", "Legend", "MDX", "NSX", "RDX", "RL", "RLX", "RSX", "SLX", "TL", "TLX", "TSX", "Vigor", "ZDX"],
+        "Alfa Romeo": ["145", "146", "147", "155", "156", "159", "164", "166", "33", "4C", "75", "90", "Alfa 6", "Arna", "Brera", "GT", "GTV", "Giulia", "Giulietta", "MiTo", "Spider", "Stelvio", "Tonale"],
+        "Aston Martin": ["Cygnet", "DB11", "DB7", "DB9", "DBS", "DBX", "Lagonda", "One-77", "Rapide", "V12 Vantage", "V8 Vantage", "Vanquish", "Vantage", "Virage"],
+        "Audi": ["100", "200", "80", "90", "A1", "A3", "A4", "A4 Allroad", "A5", "A6", "A6 Allroad", "A7", "A8", "E-Tron", "E-Tron GT", "Q2", "Q3", "Q4 E-Tron", "Q5", "Q7", "Q8", "R8", "RS3", "RS4", "RS5", "RS6", "RS7", "RS8", "RSQ8", "S1", "S3", "S4", "S5", "S6", "S7", "S8", "SQ2", "SQ5", "SQ7", "SQ8", "TT", "TTS", "TT RS"],
+        "BMW": ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "6 Series", "7 Series", "8 Series", "i3", "i4", "i8", "iX", "iX3", "M1", "M2", "M3", "M4", "M5", "M6", "M8", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "XM", "Z1", "Z3", "Z4", "Z8"],
+        "Buick": ["Cascada", "Century", "Enclave", "Encore", "Envision", "Envista", "LaCrosse", "LeSabre", "Lucerne", "Park Avenue", "Rainier", "Regal", "Rendezvous", "Riviera", "Roadmaster", "Skylark", "Terraza", "Verano"],
+        "BYD": ["Atto 3", "Dolphin", "E6", "F0", "F3", "F6", "G3", "G6", "Han", "L3", "M6", "S6", "S7", "Seal", "Song", "Tang", "Yuan"],
+        "Cadillac": ["ATS", "CTS", "CT4", "CT5", "CT6", "DeVille", "DTS", "Eldorado", "Escalade", "Fleetwood", "Lyriq", "SRX", "STS", "Seville", "XT4", "XT5", "XT6", "XTS"],
+        "Chevrolet": ["Aveo", "Blazer", "Bolt", "Camaro", "Captiva", "Cobalt", "Colorado", "Corvette", "Cruze", "Equinox", "Express", "HHR", "Impala", "Kalos", "Lacetti", "Malibu", "Matiz", "Monte Carlo", "Orlando", "Silverado", "Sonic", "Spark", "Suburban", "Tahoe", "Tracker", "Trailblazer", "Traverse", "Volt"],
+        "Chrysler": ["200", "300", "300C", "300M", "Aspen", "Concorde", "Crossfire", "Grand Voyager", "LHS", "Neon", "Pacifica", "PT Cruiser", "Sebring", "Town & Country", "Voyager"],
+        "Citroen": ["Berlingo", "C1", "C2", "C3", "C3 Aircross", "C4", "C4 Cactus", "C4 Picasso", "C5", "C5 Aircross", "C6", "C8", "DS3", "DS4", "DS5", "Jumper", "Jumpy", "Nemo", "Saxo", "Spacetourer", "Xantia", "XM", "Xsara"],
+        "Dodge": ["Avenger", "Caliber", "Challenger", "Charger", "Dakota", "Dart", "Durango", "Grand Caravan", "Journey", "Magnum", "Nitro", "Ram", "Stratus", "Viper"],
+        "Ford": ["Aerostar", "B-Max", "Bronco", "C-Max", "Contour", "Crown Victoria", "EcoSport", "Edge", "Escape", "Escort", "Expedition", "Explorer", "F-150", "F-250", "F-350", "Fiesta", "Five Hundred", "Flex", "Focus", "Freestar", "Freestyle", "Fusion", "Galaxy", "Ka", "Kuga", "Mondeo", "Mustang", "Puma", "Ranger", "S-Max", "Taurus", "Territory", "Thunderbird", "Transit", "Windstar"],
+        "Honda": ["Accord", "Civic", "CR-V", "CR-Z", "Element", "Fit", "HR-V", "Insight", "Odyssey", "Passport", "Pilot", "Prelude", "Ridgeline", "S2000"],
+        "Hyundai": ["Accent", "Azera", "Elantra", "Equus", "Genesis", "Ioniq", "Kona", "Palisade", "Santa Fe", "Sonata", "Tucson", "Veloster", "Venue"],
+        "Infiniti": ["EX", "FX", "G", "I", "J", "M", "Q30", "Q40", "Q50", "Q60", "Q70", "QX30", "QX50", "QX60", "QX70", "QX80"],
+        "Jaguar": ["E-Pace", "F-Pace", "F-Type", "I-Pace", "S-Type", "X-Type", "XE", "XF", "XJ", "XK"],
+        "Jeep": ["Cherokee", "Commander", "Compass", "Grand Cherokee", "Liberty", "Patriot", "Renegade", "Wagoneer", "Wrangler"],
+        "Kia": ["Cadenza", "Carnival", "Ceed", "Cerato", "Forte", "K5", "K900", "Niro", "Optima", "Picanto", "Rio", "Sedona", "Sorento", "Soul", "Sportage", "Stinger", "Telluride"],
+        "Lamborghini": ["Aventador", "Gallardo", "Huracan", "Murcielago", "Reventon", "Urus"],
+        "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Evoque", "Freelander", "Range Rover", "Range Rover Sport", "Range Rover Velar"],
+        "Lexus": ["CT", "ES", "GS", "GX", "HS", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "SC", "UX"],
+        "Lincoln": ["Aviator", "Continental", "Corsair", "LS", "MKC", "MKS", "MKT", "MKX", "MKZ", "Navigator", "Town Car"],
+        "Mazda": ["2", "3", "5", "6", "626", "929", "Atenza", "Axela", "B-Series", "BT-50", "CX-3", "CX-5", "CX-7", "CX-9", "CX-30", "MPV", "MX-5", "Premacy", "Protege", "RX-7", "RX-8", "Tribute"],
+        "Mercedes-Benz": ["A-Class", "B-Class", "C-Class", "CL-Class", "CLA-Class", "CLK-Class", "CLS-Class", "E-Class", "G-Class", "GL-Class", "GLA-Class", "GLB-Class", "GLC-Class", "GLE-Class", "GLK-Class", "GLS-Class", "M-Class", "ML-Class", "R-Class", "S-Class", "SL-Class", "SLK-Class", "SLR McLaren", "SLS AMG", "V-Class", "Viano", "Vito"],
+        "Mini": ["Clubman", "Countryman", "Coupe", "Hatch", "Paceman", "Roadster"],
+        "Mitsubishi": ["3000GT", "ASX", "Challenger", "Colt", "Eclipse", "Eclipse Cross", "Endeavor", "Evolution", "Galant", "Grandis", "i-MiEV", "Lancer", "Mirage", "Montero", "Outlander", "Pajero", "Space Star"],
+        "Nissan": ["350Z", "370Z", "Altima", "Armada", "Cube", "Frontier", "GT-R", "Juke", "Leaf", "Maxima", "Murano", "Navara", "Note", "NV200", "Pathfinder", "Patrol", "Qashqai", "Quest", "Rogue", "Sentra", "Sunny", "Titan", "Versa", "X-Trail", "Xterra"],
+        "Porsche": ["911", "918 Spyder", "Boxster", "Cayenne", "Cayman", "Macan", "Panamera", "Taycan"],
+        "Subaru": ["Ascent", "BRZ", "Crosstrek", "Forester", "Impreza", "Legacy", "Outback", "SVX", "Tribeca", "WRX"],
+        "Tesla": ["Model 3", "Model S", "Model X", "Model Y", "Roadster"],
+        "Toyota": ["4Runner", "86", "Avalon", "Avensis", "C-HR", "Camry", "Celica", "Corolla", "Crown", "FJ Cruiser", "Highlander", "Land Cruiser", "Matrix", "Prius", "RAV4", "Sequoia", "Sienna", "Supra", "Tacoma", "Tundra", "Venza", "Vios", "Yaris"],
+        "Volkswagen": ["Arteon", "Atlas", "Beetle", "CC", "Eos", "Golf", "Jetta", "Passat", "Polo", "Scirocco", "Tiguan", "Touareg", "Touran"],
+        "Volvo": ["C30", "C70", "S40", "S60", "S80", "S90", "V40", "V50", "V60", "V70", "V90", "XC40", "XC60", "XC70", "XC90"]
+    ]
+}
 // MARK: - Sheet Views
 struct CarMakeSearchView: View {
     @Binding var selectedMake: String
+    @Binding var selectedModel: String
+    let onSelection: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
+    @State private var selectedBrand: String?
+    @State private var showingModels = false
     
     // Full list of car makes for search
     private let allCarMakes = [
-        "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chrysler",
-        "Dodge", "Ford", "Genesis", "GMC", "Honda", "Hyundai", "Infiniti",
-        "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Lincoln", "Mazda",
-        "Mercedes-Benz", "Mini", "Mitsubishi", "Nissan", "Porsche", "Ram",
-        "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
+        "Acura", "Alfa Romeo", "Aston Martin", "Audi", "Avatr",
+        "Baic", "Bentley", "BMW", "Buick", "BYD",
+        "Cadillac", "Changan", "Chery", "Chevrolet", "Chrysler", "Citroen",
+        "Dodge",
+        "Exeed",
+        "Ford", "Ferrari", "Fiat", "Forthing",
+        "Gac", "Geely", "Genesis", "GMC", "GWM",
+        "Haval", "Honda", "Hongqi", "Hummer", "Hyundai",
+        "Infiniti",
+        "Jac", "Jaecoo", "Jaguar", "Jeep", "Jetour",
+        "Kia", "Kaiyi", "Koenigsegg",
+        "Lada", "Lamborghini", "Land Rover", "Lexus", "Leapmotor", "Li Auto", "Lincoln", "Lotus", "Lucid", "Lynk & Co",
+        "Mahindra", "Maserati", "Maybach", "Mazda", "McLaren", "Mercedes-Benz", "MG", "Mini", "Mitsubishi",
+        "Nissan", "NIO",
+        "Omoda", "Opel",
+        "Pagani", "Peugeot", "Polaris", "Pontiac", "Porsche",
+        "Ram", "Renault", "Rivian", "Rolls-Royce", "Rox",
+        "Subaru", "Skoda", "Smart", "Soueast", "SsangYong", "Suzuki",
+        "Tata", "Tesla", "Toyota",
+        "UAZ",
+        "Volkswagen", "Volvo", "Voyah",
+        "Xpeng",
+        "Zeekr",
+        "Other"
     ]
     
     private var filteredMakes: [String] {
@@ -918,135 +1036,133 @@ struct CarMakeSearchView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
-                // Search bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    TextField("Search make", text: $searchText)
-                        .textFieldStyle(.plain)
+                if !showingModels {
+                    // Makes list view
+                    makesListView
+                } else {
+                    // Models list view
+                    modelsListView
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(.systemGray6))
-                .cornerRadius(25)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                // Car makes list
-                List {
-                    ForEach(filteredMakes, id: \.self) { make in
-                        Button(action: {
-                            selectedMake = make
-                            dismiss()
-                        }) {
-                            HStack {
-                                Text(make)
-                                    .foregroundColor(.primary)
-                                    .font(.body)
-                                
-                                Spacer()
-                                
-                                if selectedMake == make {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.mint)
-                                        .font(.body)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .listStyle(.plain)
             }
-            .navigationTitle("Select Make")
+            .navigationTitle(showingModels ? selectedBrand ?? "" : "Select Make")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if showingModels {
+                        Button("Back") {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showingModels = false
+                            }
+                        }
+                    } else {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+                }
+                
+                if !showingModels {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
-}
-
-struct CarMakeSelectionView: View {
-    @Binding var selectedMake: String
-    @Environment(\.dismiss) private var dismiss
     
-    private let carMakes = ["Toyota", "Honda", "BMW", "Mercedes", "Audi", "Volkswagen", "Hyundai", "Kia", "Nissan", "Ford"]
-    
-    var body: some View {
-        NavigationView {
-            List(carMakes, id: \.self) { make in
-                Button(action: {
-                    selectedMake = make
-                    dismiss()
-                }) {
-                    HStack {
-                        Text(make)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        if selectedMake == make {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.mint)
+    private var makesListView: some View {
+        VStack(spacing: 0) {
+            // Search bar
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+                TextField("Search make", text: $searchText)
+                    .textFieldStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(.systemGray6))
+            .cornerRadius(25)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // Car makes list
+            List {
+                ForEach(filteredMakes, id: \.self) { make in
+                    Button(action: {
+                        selectedBrand = make
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingModels = true
                         }
+                    }) {
+                        HStack(spacing: 15) {
+                            // Brand logo
+                            Image("\(make.lowercased())-logo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 40, height: 40)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            
+                            // Brand name
+                            Text(make)
+                                .foregroundColor(.primary)
+                                .font(.body)
+                            
+                            Spacer()
+                            
+                            // Chevron
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                        .padding(.vertical, 4)
                     }
+                    .buttonStyle(.plain)
                 }
             }
-            .navigationTitle("Select Make")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
+            .listStyle(.plain)
         }
     }
-}
-
-struct CarModelSelectionView: View {
-    @Binding var selectedModel: String
-    @Environment(\.dismiss) private var dismiss
     
-    private let carModels = ["Sedan", "SUV", "Hatchback", "Coupe", "Convertible", "Wagon", "Truck", "Van"]
-    
-    var body: some View {
-        NavigationView {
-            List(carModels, id: \.self) { model in
-                Button(action: {
-                    selectedModel = model
-                    dismiss()
-                }) {
-                    HStack {
-                        Text(model)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        if selectedModel == model {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.mint)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Select Model")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+    private var modelsListView: some View {
+        List {
+            if let brand = selectedBrand,
+               let models = CarBrandData.carBrandModels[brand] {
+                ForEach(models, id: \.self) { model in
+                    Button(action: {
+                        onSelection(brand, model)
                         dismiss()
+                    }) {
+                        HStack {
+                            Text(model)
+                                .foregroundColor(.primary)
+                                .font(.body)
+                            
+                            Spacer()
+                            
+                            if selectedModel == model && selectedMake == brand {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.mint)
+                                    .font(.body)
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
+                    .buttonStyle(.plain)
                 }
+            } else {
+                Text("No models available")
+                    .foregroundColor(.secondary)
             }
         }
+        .listStyle(.plain)
     }
 }
 
