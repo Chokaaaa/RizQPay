@@ -18,24 +18,27 @@ struct AddNewPlateNumberView: View {
     @State private var isMakeCardExpanded = false
     @State private var isModelCardExpanded = false
     @State private var isLicensePlateExpanded = false
-    @FocusState private var isKeyboardWarmerFocused: Bool
-    @State private var keyboardWarmerText = ""
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Hidden keyboard warmer
-                    TextField("", text: $keyboardWarmerText)
-                        .focused($isKeyboardWarmerFocused)
-                        .frame(width: 0, height: 0)
-                        .opacity(0)
-                    
-                    
                     // License plate
                     LicensePlateCard(
                         licensePlate: $licensePlate,
-                        isExpanded: $isLicensePlateExpanded
+                        isExpanded: $isLicensePlateExpanded,
+                        onTapped: {
+                            // Close all other cards when license plate is tapped
+                            isColorCardExpanded = false
+                            isMakeCardExpanded = false
+                            isModelCardExpanded = false
+                        },
+                        onRegionComplete: {
+                            // Open make card when license plate region is completed
+                            withAnimation(.linear(duration: 0.1)) {
+                                isMakeCardExpanded = true
+                            }
+                        }
                     )
                     
                                         
@@ -45,11 +48,12 @@ struct AddNewPlateNumberView: View {
                         isExpanded: $isMakeCardExpanded,
                         onTap: {
                             withAnimation(.easeInOut(duration: 0.3)) {
+                                // Close other cards first
+                                isColorCardExpanded = false
+                                isModelCardExpanded = false
+                                isLicensePlateExpanded = false
+                                // Then toggle this card
                                 isMakeCardExpanded.toggle()
-                                if isMakeCardExpanded {
-                                    isColorCardExpanded = false
-                                    isModelCardExpanded = false
-                                }
                             }
                         },
                         onSearchTap: {
@@ -63,11 +67,12 @@ struct AddNewPlateNumberView: View {
                         isExpanded: $isModelCardExpanded,
                         onTap: {
                             withAnimation(.easeInOut(duration: 0.3)) {
+                                // Close other cards first
+                                isColorCardExpanded = false
+                                isMakeCardExpanded = false
+                                isLicensePlateExpanded = false
+                                // Then toggle this card
                                 isModelCardExpanded.toggle()
-                                if isModelCardExpanded {
-                                    isColorCardExpanded = false
-                                    isMakeCardExpanded = false
-                                }
                             }
                         }
                     )
@@ -75,7 +80,9 @@ struct AddNewPlateNumberView: View {
                     ColorSelectionCard(
                         selectedColor: $selectedColor,
                         isExpanded: $isColorCardExpanded,
-                        isMakeCardExpanded: $isMakeCardExpanded
+                        isMakeCardExpanded: $isMakeCardExpanded,
+                        isModelCardExpanded: $isModelCardExpanded,
+                        isLicensePlateExpanded: $isLicensePlateExpanded
                     )
 
                     
@@ -106,13 +113,8 @@ struct AddNewPlateNumberView: View {
                 .padding(.top, 20)
             }
             .onAppear {
-                // Trigger keyboard immediately in background using hidden field
+                // Expand license plate card without triggering keyboard
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isKeyboardWarmerFocused = true
-                }
-                
-                // Then expand license plate card after keyboard is warmed
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     withAnimation(.linear(duration: 0.1)) {
                         isLicensePlateExpanded = true
                     }

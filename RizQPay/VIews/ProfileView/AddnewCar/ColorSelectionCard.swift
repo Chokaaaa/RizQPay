@@ -11,6 +11,8 @@ struct ColorSelectionCard: View {
     @Binding var selectedColor: CarColor?
     @Binding var isExpanded: Bool
     @Binding var isMakeCardExpanded: Bool
+    @Binding var isModelCardExpanded: Bool
+    @Binding var isLicensePlateExpanded: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -47,10 +49,12 @@ struct ColorSelectionCard: View {
             .background(Color.white)
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.3)) {
+                    // Close all other cards first
+                    isMakeCardExpanded = false
+                    isModelCardExpanded = false
+                    isLicensePlateExpanded = false
+                    // Then toggle this card
                     isExpanded.toggle()
-                    if isExpanded {
-                        isMakeCardExpanded = false
-                    }
                 }
             }
             

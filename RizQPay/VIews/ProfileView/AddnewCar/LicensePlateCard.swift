@@ -10,14 +10,17 @@ import SwiftUI
 struct LicensePlateCard: View {
     @Binding var licensePlate: String
     @Binding var isExpanded: Bool
-    @State private var firstField: String = ""
-    @State private var secondField: String = ""
+    var onTapped: (() -> Void)?
+    var onRegionComplete: (() -> Void)?
+    @State private var numbersField: String = ""
+    @State private var lettersField: String = ""
+    @State private var regionField: String = ""
     @FocusState private var focusedField: PlateField?
     @State private var hasInitialized = false
     @State private var updateTask: Task<Void, Never>?
     
     enum PlateField {
-        case first, second
+        case numbers, letters, region
     }
     
     var body: some View {
@@ -68,12 +71,13 @@ struct LicensePlateCard: View {
         .padding(.vertical, 16)
         .background(Color.white)
         .onTapGesture {
-            withAnimation(.linear(duration: 0.1)) {
-                isExpanded.toggle()
-            }
-            if isExpanded {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    focusedField = .first
+            // Always close other cards first - this is mandatory
+            onTapped?()
+            
+            // Small delay to ensure other cards close first
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.linear(duration: 0.1)) {
+                    isExpanded.toggle()
                 }
             }
         }
@@ -85,21 +89,24 @@ struct LicensePlateCard: View {
                 .padding(.horizontal, 20)
             
             // Kazakhstan License Plate Input - Static Layout
-            HStack(spacing: 0) {
+            HStack(spacing: 20) {
                 // Left section with flag and KZ
                 flagAndCountryCode
                 
-                // First text field (main number and letters)
-                firstTextField
+                // Numbers field (100)
+                numbersTextField
+                
+                // Letters field (ABC)
+                lettersTextField
                 
                 // Vertical divider
                 divider
                 
-                // Second text field (region code)
-                secondTextField
+                // Region field (02)
+                regionTextField
             }
             .background(plateBackground)
-            .frame(height: 48)
+            .frame(height: 75)
             .padding(.horizontal, 20)
         }
         .padding(.bottom, 16)
@@ -117,8 +124,27 @@ struct LicensePlateCard: View {
         .padding(.leading, 6)
     }
     
-    private var firstTextField: some View {
-        TextField("100 ABC", text: $firstField)
+    private var numbersTextField: some View {
+        TextField("100", text: $numbersField)
+            .font(.system(size: 16, weight: .bold, design: .monospaced))
+            .foregroundColor(.black)
+            .multilineTextAlignment(.center)
+            .disableAutocorrection(true)
+            .autocorrectionDisabled(true)
+            .keyboardType(.numberPad)
+            .focused($focusedField, equals: .numbers)
+            .frame(width: 60)
+            .background(Color.clear)
+            .onSubmit {
+                focusedField = .letters
+            }
+            .onChange(of: numbersField) { newValue in
+                handleNumbersFieldChange(newValue)
+            }
+    }
+    
+    private var lettersTextField: some View {
+        TextField("ABC", text: $lettersField)
             .font(.system(size: 16, weight: .bold, design: .monospaced))
             .foregroundColor(.black)
             .multilineTextAlignment(.center)
@@ -127,42 +153,39 @@ struct LicensePlateCard: View {
             .disableAutocorrection(true)
             .autocorrectionDisabled(true)
             .textInputAutocapitalization(.characters)
-            .keyboardType(.asciiCapable)
-            .focused($focusedField, equals: .first)
-            .frame(maxWidth: .infinity)
+            .keyboardType(.alphabet)
+            .focused($focusedField, equals: .letters)
+            .frame(width: 60)
             .background(Color.clear)
             .onSubmit {
-                focusedField = .second
+                focusedField = .region
             }
-            .onChange(of: firstField) { newValue in
-                handleFirstFieldChange(newValue)
+            .onChange(of: lettersField) { newValue in
+                handleLettersFieldChange(newValue)
             }
     }
     
     private var divider: some View {
         Rectangle()
             .fill(Color.black)
-            .frame(width: 1.5, height: 32)
+            .frame(width: 1.5, height: 52)
             .padding(.horizontal, 4)
     }
     
-    private var secondTextField: some View {
-        TextField("02", text: $secondField)
+    private var regionTextField: some View {
+        TextField("02", text: $regionField)
             .font(.system(size: 16, weight: .bold, design: .monospaced))
             .foregroundColor(.black)
             .multilineTextAlignment(.center)
-            .textCase(.uppercase)
-            .autocapitalization(.allCharacters)
             .disableAutocorrection(true)
             .autocorrectionDisabled(true)
-            .textInputAutocapitalization(.characters)
             .keyboardType(.numberPad)
-            .focused($focusedField, equals: .second)
-            .frame(width: 44)
-            .padding(.trailing, 6)
+            .focused($focusedField, equals: .region)
+            .frame(width: 30)
+            .padding(.trailing, 25)
             .background(Color.clear)
-            .onChange(of: secondField) { newValue in
-                handleSecondFieldChange(newValue)
+            .onChange(of: regionField) { newValue in
+                handleRegionFieldChange(newValue)
             }
     }
     
@@ -177,20 +200,41 @@ struct LicensePlateCard: View {
     
     // MARK: - Helper Functions
     
-    private func handleFirstFieldChange(_ newValue: String) {
-        let filtered = String(newValue.prefix(7))
+    private func handleNumbersFieldChange(_ newValue: String) {
+        let filtered = String(newValue.filter { $0.isNumber }.prefix(3))
         if filtered != newValue {
-            firstField = filtered
+            numbersField = filtered
         }
         updateLicensePlateDebounced()
     }
     
-    private func handleSecondFieldChange(_ newValue: String) {
-        let filtered = String(newValue.filter { $0.isNumber }.prefix(2))
+    private func handleLettersFieldChange(_ newValue: String) {
+        let filtered = String(newValue.filter { $0.isLetter }.prefix(3).uppercased())
         if filtered != newValue {
-            secondField = filtered
+            lettersField = filtered
         }
         updateLicensePlateDebounced()
+    }
+    
+    private func handleRegionFieldChange(_ newValue: String) {
+        let filtered = String(newValue.filter { $0.isNumber }.prefix(2))
+        if filtered != newValue {
+            regionField = filtered
+        }
+        updateLicensePlateDebounced()
+        
+        // Auto-collapse and trigger next card when region is complete
+        if filtered.count == 2 && !numbersField.isEmpty && !lettersField.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.linear(duration: 0.1)) {
+                    isExpanded = false
+                }
+                // Trigger next card opening immediately after collapse starts
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    onRegionComplete?()
+                }
+            }
+        }
     }
     
     private func updateLicensePlateDebounced() {
@@ -211,12 +255,12 @@ struct LicensePlateCard: View {
     
     private func updateLicensePlate() {
         let newPlate: String
-        if !firstField.isEmpty && !secondField.isEmpty {
-            newPlate = "KZ \(firstField) \(secondField)"
-        } else if firstField.isEmpty && secondField.isEmpty {
+        if !numbersField.isEmpty && !lettersField.isEmpty && !regionField.isEmpty {
+            newPlate = "KZ \(numbersField) \(lettersField) \(regionField)"
+        } else if numbersField.isEmpty && lettersField.isEmpty && regionField.isEmpty {
             newPlate = ""
         } else {
-            return // Don't update if only one field is filled
+            return // Don't update if not all fields are filled
         }
         
         if newPlate != licensePlate {
@@ -229,10 +273,12 @@ struct LicensePlateCard: View {
         
         let components = licensePlate.components(separatedBy: " ")
         if components.count >= 4 && components[0] == "KZ" {
-            firstField = "\(components[1]) \(components[2])"
+            numbersField = components[1]
+            lettersField = components[2]
             if components.count >= 4 {
-                secondField = components[3]
+                regionField = components[3]
             }
         }
     }
 }
+
