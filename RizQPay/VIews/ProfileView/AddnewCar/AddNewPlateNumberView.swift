@@ -65,6 +65,7 @@ struct AddNewPlateNumberView: View {
                     ModelSelectionCard(
                         selectedModel: $carModel,
                         isExpanded: $isModelCardExpanded,
+                        selectedMake: carMake,
                         onTap: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 // Close other cards first
@@ -73,6 +74,15 @@ struct AddNewPlateNumberView: View {
                                 isLicensePlateExpanded = false
                                 // Then toggle this card
                                 isModelCardExpanded.toggle()
+                            }
+                        },
+                        onMakeRequired: {
+                            // Close all cards and open make card when make is required
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isColorCardExpanded = false
+                                isModelCardExpanded = false
+                                isLicensePlateExpanded = false
+                                isMakeCardExpanded = true
                             }
                         }
                     )
