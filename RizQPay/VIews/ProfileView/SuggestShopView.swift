@@ -1,0 +1,16 @@
+//
+//  SuggestShopView.swift
+//  RizQPay
+//
+//  Created by Nursultan Yelemessov on 03/11/2025.
+//
+
+import SwiftUI
+
+struct SuggestShopView: View {
+    var body: some View {
+        Text("Suggest a Shop")
+            .navigationTitle("Suggest Shop")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}

@@ -273,7 +273,10 @@ class GoogleMapsLocationManager: NSObject, ObservableObject {
     
     /// Set the map view reference
     func setMapView(_ mapView: GMSMapView) {
-        self.mapView = mapView
+        // Defer the update to avoid publishing changes during view updates
+        Task { @MainActor in
+            self.mapView = mapView
+        }
     }
     
     // MARK: - Navigation Methods
