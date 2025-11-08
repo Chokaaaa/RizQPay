@@ -139,9 +139,12 @@ struct CarMakeSearchView: View {
                                 .foregroundColor(.secondary)
                                 .font(.caption)
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets())
                 }
             }
             .listStyle(.plain)
@@ -170,9 +173,12 @@ struct CarMakeSearchView: View {
                                     .font(.body)
                             }
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets())
                 }
             } else {
                 Text("No models available")

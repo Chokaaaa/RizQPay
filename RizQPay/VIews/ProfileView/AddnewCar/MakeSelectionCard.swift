@@ -25,6 +25,16 @@ struct MakeSelectionCard: View {
         CarMake(name: "Hyundai", imageName: "hyundai-logo")
     ]
     
+    // Mapping from display name to data key
+    private func getDataKey(for displayName: String) -> String {
+        switch displayName {
+        case "Mercedes":
+            return "Mercedes-Benz"
+        default:
+            return displayName
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header

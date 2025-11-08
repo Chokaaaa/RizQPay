@@ -62,9 +62,9 @@ struct LicensePlateCard: View {
                     .font(.body)
                     .foregroundColor(.primary)
             } else {
-                Text("Add")
+                Text("")
                     .font(.body)
-                    .foregroundColor(.mint)
+                    .foregroundColor(.black)
             }
         }
         .padding(.horizontal, 20)

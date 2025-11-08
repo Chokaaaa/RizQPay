@@ -84,6 +84,12 @@ struct AddNewPlateNumberView: View {
                                 isLicensePlateExpanded = false
                                 isMakeCardExpanded = true
                             }
+                        },
+                        onModelSelected: {
+                            // Open color card when model is selected
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isColorCardExpanded = true
+                            }
                         }
                     )
                     

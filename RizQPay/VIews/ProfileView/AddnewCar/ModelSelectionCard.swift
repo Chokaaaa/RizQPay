@@ -7,15 +7,62 @@
 
 import SwiftUI
 
+// MARK: - TagsView Component
+struct TagsView<T: Hashable, Content: View>: View {
+    let items: [T]
+    let content: (T) -> Content
+    
+    init(items: [T], @ViewBuilder content: @escaping (T) -> Content) {
+        self.items = items
+        self.content = content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(computeRows(), id: \.self) { row in
+                HStack(spacing: 8) {
+                    ForEach(row, id: \.self) { item in
+                        content(item)
+                    }
+                    Spacer()
+                }
+            }
+        }
+    }
+    
+    private func computeRows() -> [[T]] {
+        var rows: [[T]] = []
+        var currentRow: [T] = []
+        
+        for item in items {
+            currentRow.append(item)
+            
+            // Fill up first row with more items, then second row
+            if currentRow.count >= 3 {
+                rows.append(currentRow)
+                currentRow = []
+            }
+        }
+        
+        if !currentRow.isEmpty {
+            rows.append(currentRow)
+        }
+        
+        return rows
+    }
+}
+
 struct ModelSelectionCard: View {
     @Binding var selectedModel: String
     @Binding var isExpanded: Bool
     @State private var searchText: String = ""
     @State private var showingAlert = false
+    @State private var showingModelSearch = false
     
     let selectedMake: String
     let onTap: () -> Void
     let onMakeRequired: () -> Void  // Callback to open make card when make is not selected
+    let onModelSelected: () -> Void  // New callback for when model is selected
     
     private var availableModels: [String] {
         guard !selectedMake.isEmpty else { return [] }
@@ -51,6 +98,22 @@ struct ModelSelectionCard: View {
         } message: {
             Text("Please select a car make first before choosing a model.")
         }
+        .sheet(isPresented: $showingModelSearch) {
+            CarModelSearchView(
+                selectedMake: selectedMake,
+                selectedModel: $selectedModel,
+                onSelection: { model in
+                    selectedModel = model
+                    withAnimation(.linear(duration: 0.1)) {
+                        isExpanded = false
+                    }
+                    // Trigger next card opening after collapse
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        onModelSelected()
+                    }
+                }
+            )
+        }
     }
     
     private var headerView: some View {
@@ -85,7 +148,7 @@ struct ModelSelectionCard: View {
     }
     
     private var expandedContent: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             Divider()
                 .padding(.horizontal, 20)
             
@@ -102,42 +165,48 @@ struct ModelSelectionCard: View {
             .background(Color(.systemGray6))
             .cornerRadius(25)
             .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .onTapGesture {
+                showingModelSearch = true
+            }
             
-            // Model capsules (maximum 5)
+            // Model tags (maximum 5) with added spacing
             if !filteredModels.isEmpty {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], alignment: .leading, spacing: 12) {
-                    ForEach(filteredModels, id: \.self) { model in
-                        Button(action: {
-                            selectedModel = model
-                            withAnimation(.linear(duration: 0.1)) {
-                                isExpanded = false
-                            }
-                            searchText = "" // Reset search
-                        }) {
-                            Text(model)
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(20)
+                TagsView(items: filteredModels) { model in
+                    Button(action: {
+                        selectedModel = model
+                        withAnimation(.linear(duration: 0.1)) {
+                            isExpanded = false
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        searchText = "" // Reset search
+                        // Trigger next card opening after collapse
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            onModelSelected()
+                        }
+                    }) {
+                        Text(model)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(20)
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 20)
+                .padding(.top, 20)
             } else if !searchText.isEmpty {
                 Text("No models found")
                     .font(.body)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 20)
+                    .padding(.top, 20)
             }
             
-            Spacer(minLength: 20)
+            // Bottom padding to maintain card height
+            Spacer(minLength: 16)
         }
         .padding(.bottom, 16)
     }
