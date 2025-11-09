@@ -20,13 +20,21 @@ import GoogleMaps
 class GoogleMapsConfiguration {
     static let shared = GoogleMapsConfiguration()
     
-    // IMPORTANT: Replace with your actual Google Maps API key
+    // API key is now loaded from Config.plist for security
     // Make sure to enable both:
     // - Maps SDK for iOS
     // - Routes API (replaces Directions API)
-    private let apiKey = "AIzaSyDzutXe4rbv6nycRRJaSSSVQz_egFL0oEc"
+    private let apiKey: String
     
-    private init() {}
+    private init() {
+        // Load API key from Config.plist
+        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let key = plist["GoogleMapsAPIKey"] as? String else {
+            fatalError("❌ ERROR: Could not load GoogleMapsAPIKey from Config.plist. Make sure Config.plist exists and contains the GoogleMapsAPIKey.")
+        }
+        self.apiKey = key
+    }
     
     /// Initialize Google Maps SDK - call this in AppDelegate
     func configure() {
@@ -51,9 +59,12 @@ class GoogleMapsConfiguration {
     
     /// Validate that the API key is properly set
     func validateAPIKey() -> Bool {
-        guard !apiKey.isEmpty && apiKey != "AIzaSyDzutXe4rbv6nycRRJaSSSVQz_egFL0oEc" else {
+        guard !apiKey.isEmpty && 
+              apiKey != "YOUR_GOOGLE_MAPS_API_KEY_HERE" &&
+              apiKey != "AIzaSyDzutXe4rbv6nycRRJaSSSVQz_egFL0oEc" else {
             print("⚠️ WARNING: Google Maps API key not properly configured!")
-            print("⚠️ Please set your API key in GoogleMapsConfiguration.swift")
+            print("⚠️ Please set your API key in Config.plist")
+            print("⚠️ Copy Config.plist.template to Config.plist and add your key")
             print("⚠️ Make sure to enable Routes API in Google Cloud Console")
             return false
         }

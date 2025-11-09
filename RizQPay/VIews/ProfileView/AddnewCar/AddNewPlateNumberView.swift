@@ -19,6 +19,7 @@ struct AddNewPlateNumberView: View {
     @State private var isMakeCardExpanded = false
     @State private var isModelCardExpanded = false
     @State private var isLicensePlateExpanded = false
+    @State private var isUpdatingFromSearch = false
     
     var body: some View {
         NavigationView {
@@ -62,8 +63,8 @@ struct AddNewPlateNumberView: View {
                         }
                     )
                     .onChange(of: carMake) { oldMake, newMake in
-                        // Reset model when make changes
-                        if oldMake != newMake && !newMake.isEmpty {
+                        // Reset model when make changes, but not when updating from search
+                        if oldMake != newMake && !newMake.isEmpty && !isUpdatingFromSearch {
                             carModel = ""
                             // First collapse the make card, then expand model card
                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -75,6 +76,11 @@ struct AddNewPlateNumberView: View {
                                     isModelCardExpanded = true
                                 }
                             }
+                        }
+                        
+                        // Reset the flag after processing
+                        if isUpdatingFromSearch {
+                            isUpdatingFromSearch = false
                         }
                     }
                     
@@ -164,11 +170,19 @@ struct AddNewPlateNumberView: View {
                     selectedMake: $carMake,
                     selectedModel: $carModel,
                     onSelection: { make, model in
+                        // Set flag to prevent onChange from resetting model
+                        isUpdatingFromSearch = true
                         carMake = make
                         carModel = model
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isMakeCardExpanded = false
                             isModelCardExpanded = false
+                        }
+                        // Open color card when both make and model are selected from search
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isColorCardExpanded = true
+                            }
                         }
                     }
                 )
