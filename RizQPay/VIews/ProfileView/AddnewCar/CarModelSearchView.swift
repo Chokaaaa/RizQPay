@@ -14,19 +14,18 @@ struct CarModelSearchView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     
-    // Mapping from display name to data key
-    private func getDataKey(for displayName: String) -> String {
-        switch displayName {
-        case "Mercedes":
-            return "Mercedes-Benz"
+    // Mapping from data key to display name
+    private func getDisplayName(for dataKey: String) -> String {
+        switch dataKey {
+        case "Mercedes-Benz":
+            return "Mercedes"
         default:
-            return displayName
+            return dataKey
         }
     }
     
     private var availableModels: [String] {
-        let dataKey = getDataKey(for: selectedMake)
-        return CarBrandData.carBrandModels[dataKey] ?? []
+        return CarBrandData.carBrandModels[selectedMake] ?? []
     }
     
     private var filteredModels: [String] {
@@ -45,7 +44,7 @@ struct CarModelSearchView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                     
-                    TextField("Search \(selectedMake) models", text: $searchText)
+                    TextField("Search \(getDisplayName(for: selectedMake)) models", text: $searchText)
                         .textFieldStyle(PlainTextFieldStyle())
                     
                     if !searchText.isEmpty {
@@ -95,7 +94,7 @@ struct CarModelSearchView: View {
                 Spacer()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("\(selectedMake) Models")
+            .navigationTitle("\(getDisplayName(for: selectedMake)) Models")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden()
             .toolbar {

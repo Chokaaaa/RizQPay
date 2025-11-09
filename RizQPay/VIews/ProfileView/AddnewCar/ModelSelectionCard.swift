@@ -64,6 +64,16 @@ struct ModelSelectionCard: View {
     let onMakeRequired: () -> Void  // Callback to open make card when make is not selected
     let onModelSelected: () -> Void  // New callback for when model is selected
     
+    // Mapping from data key to display name
+    private func getDisplayName(for dataKey: String) -> String {
+        switch dataKey {
+        case "Mercedes-Benz":
+            return "Mercedes"
+        default:
+            return dataKey
+        }
+    }
+    
     private var availableModels: [String] {
         guard !selectedMake.isEmpty else { return [] }
         return CarBrandData.carBrandModels[selectedMake] ?? []
@@ -128,11 +138,11 @@ struct ModelSelectionCard: View {
             if !selectedModel.isEmpty {
                 Text(selectedModel)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             } else {
                 Text("Add")
                     .font(.body)
-                    .foregroundColor(.mint)
+                    .foregroundColor(.black)
             }
         }
         .padding(.horizontal, 20)
@@ -153,22 +163,27 @@ struct ModelSelectionCard: View {
                 .padding(.horizontal, 20)
             
             // Search field
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                
-                TextField("Search \(selectedMake) model", text: $searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
+            Button(action: {
+                showingModelSearch = true
+            }) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    
+                    Text("Search \(getDisplayName(for: selectedMake)) model")
+                        .foregroundColor(.gray)
+                        .font(.body)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(25)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6))
-            .cornerRadius(25)
+            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .onTapGesture {
-                showingModelSearch = true
-            }
             
             // Model tags (maximum 5) with added spacing
             if !filteredModels.isEmpty {

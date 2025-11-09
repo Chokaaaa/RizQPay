@@ -60,6 +60,22 @@ struct AddNewPlateNumberView: View {
                             showingMakeSelection = true
                         }
                     )
+                    .onChange(of: carMake) { oldMake, newMake in
+                        // Reset model when make changes
+                        if oldMake != newMake && !newMake.isEmpty {
+                            carModel = ""
+                            // First collapse the make card, then expand model card
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isMakeCardExpanded = false
+                            }
+                            // Delay the model card expansion for smooth transition
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isModelCardExpanded = true
+                                }
+                            }
+                        }
+                    }
                     
                     // Model Selection - Controlled expansion  
                     ModelSelectionCard(

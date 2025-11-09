@@ -36,12 +36,12 @@ struct ColorSelectionCard: View {
                             )
                         Text(color.rawValue)
                             .font(.body)
-                            .foregroundColor(.primary)
+                            .foregroundColor(.black)
                     }
                 } else {
                     Text("Add")
                         .font(.body)
-                        .foregroundColor(.mint)
+                        .foregroundColor(.black)
                 }
             }
             .padding(.horizontal, 20)

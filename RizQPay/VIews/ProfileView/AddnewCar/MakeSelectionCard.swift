@@ -35,6 +35,16 @@ struct MakeSelectionCard: View {
         }
     }
     
+    // Mapping from data key to display name
+    private func getDisplayName(for dataKey: String) -> String {
+        switch dataKey {
+        case "Mercedes-Benz":
+            return "Mercedes"
+        default:
+            return dataKey
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -47,13 +57,13 @@ struct MakeSelectionCard: View {
                 Spacer()
                 
                 if !selectedMake.isEmpty {
-                    Text(selectedMake)
+                    Text(getDisplayName(for: selectedMake))
                         .font(.body)
-                        .foregroundColor(.mint)
+                        .foregroundColor(.black)
                 } else {
                     Text("Add")
                         .font(.body)
-                        .foregroundColor(.mint)
+                        .foregroundColor(.black)
                 }
             }
             .padding(.horizontal, 20)
@@ -92,7 +102,7 @@ struct MakeSelectionCard: View {
                         HStack(spacing: 15) {
                             ForEach(Array(carMakes.prefix(4)), id: \.name) { make in
                                 CarMakeButton(make: make) {
-                                    selectedMake = make.name
+                                    selectedMake = getDataKey(for: make.name)
                                     withAnimation(.easeInOut(duration: 0.3)) {
                                         isExpanded = false
                                     }
@@ -104,7 +114,7 @@ struct MakeSelectionCard: View {
                         HStack(spacing: 15) {
                             ForEach(Array(carMakes.suffix(4)), id: \.name) { make in
                                 CarMakeButton(make: make) {
-                                    selectedMake = make.name
+                                    selectedMake = getDataKey(for: make.name)
                                     withAnimation(.easeInOut(duration: 0.3)) {
                                         isExpanded = false
                                     }
