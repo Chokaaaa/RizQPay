@@ -8,63 +8,99 @@
 import SwiftUI
 
 struct PlateNumbersView: View {
-    @State private var selectedPlateNumber: String = "KZ 100 ZLO 02"
-    
-    // Mock plate numbers including KZ format
-    private let plateNumbers = [
-        "KZ 100 ZLO 02",
-        "KZ 101 ABC 03",
-        "KZ 102 XYZ 01"
-    ]
+    @EnvironmentObject var vehicleManager: VehicleManager
     
     var body: some View {
         VStack(spacing: 0) {
-            // Plate Numbers List
+            // Vehicles List
             List {
-                ForEach(plateNumbers, id: \.self) { plateNumber in
-                    PlateNumberRow(
-                        plateNumber: plateNumber,
-                        isSelected: selectedPlateNumber == plateNumber
+                ForEach(vehicleManager.vehicles) { vehicle in
+                    VehicleRow(
+                        vehicle: vehicle,
+                        isSelected: vehicleManager.selectedVehicle?.id == vehicle.id
                     ) {
-                        selectedPlateNumber = plateNumber
+                        vehicleManager.selectVehicle(vehicle)
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20))
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                 .listRowSeparator(.visible)
-                .listRowSeparatorTint(.gray.opacity(0.3))
+                .listRowSeparatorTint(Color.gray.opacity(0.3))
+                .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
-            .background(Color(.systemBackground))
-            
-            // Add New Plate Number Button
-            VStack(spacing: 0) {
-                Divider()
-                
-                NavigationLink(destination: AddNewPlateNumberView()) {
-                    HStack {
-                        Text("Add New Plate Number")
-                            .font(.body)
-                            .foregroundColor(.blue)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                }
-                .background(Color(.systemBackground))
-            }
+            .background(Color(.systemGroupedBackground))
         }
-        .navigationTitle("Plate numbers")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Vehicles")
+        .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(false)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") {
-                    // Handle edit action
-                    print("Edit tapped")
+                NavigationLink(destination: AddNewPlateNumberView()
+                    .environmentObject(vehicleManager)) {
+                    Text("Add new")
+                        .font(.body)
+                        .foregroundColor(.cyan)
                 }
-                .foregroundColor(.blue)
             }
         }
+    }
+}
+
+struct VehicleRow: View {
+    let vehicle: Vehicle
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // Vehicle Logo
+                VStack {
+                    Image(vehicle.logoName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 32, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .frame(width: 40, height: 40)
+                .background(Color.gray.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                
+                // Vehicle Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(vehicle.brand) \(vehicle.model)")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(vehicle.plateNumber)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                
+                Spacer()
+                
+                // Selection Indicator
+                if isSelected {
+                    Image(systemName: "checkmark.square.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.cyan)
+                } else {
+                    Image(systemName: "square")
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray.opacity(0.3))
+                }
+            }
+            .padding(.vertical, 16)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+#Preview {
+    NavigationView {
+        PlateNumbersView()
+            .environmentObject(VehicleManager())
     }
 }

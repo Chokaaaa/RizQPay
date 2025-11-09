@@ -9,6 +9,7 @@ import SwiftUI
 
 struct AddNewPlateNumberView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var vehicleManager: VehicleManager
     @State private var selectedColor: CarColor? = nil
     @State private var carMake = ""
     @State private var carModel = ""
@@ -122,7 +123,13 @@ struct AddNewPlateNumberView: View {
                     
                     // Save Button
                     Button(action: {
-                        // Handle saving car details
+                        // Create new vehicle and add it to the manager using the helper function
+                        vehicleManager.addVehicle(
+                            brand: carMake,
+                            model: carModel,
+                            plateNumber: licensePlate
+                        )
+                        
                         print("Saving car details:")
                         print("Color: \(selectedColor?.rawValue ?? "None")")
                         print("Make: \(carMake)")
