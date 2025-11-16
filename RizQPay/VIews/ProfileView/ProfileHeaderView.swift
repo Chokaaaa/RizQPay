@@ -9,23 +9,26 @@ import SwiftUI
 
 struct ProfileHeaderView: View {
     var body: some View {
-        HStack(spacing: 15) {
-            // Profile Image
-            Circle()
-                .fill(.orange)
-                .frame(width: 70, height: 70)
-                .overlay(
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                )
+        
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .center, spacing: 10) {
+                
+                // Profile Image
+                Circle()
+                    .fill(.orange)
+                    .frame(width: 70, height: 70)
+                    .overlay(
+                        Image(systemName: "person.crop.circle")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    )
+
+                
                 Text("NursultanYelemessov")
                     .font(.title2)
                     .fontWeight(.semibold)
                 
-                HStack(spacing: 15) {
+                VStack(spacing: 5) {
                     HStack(spacing: 5) {
                         Image(systemName: "phone")
                             .font(.caption)
@@ -43,12 +46,10 @@ struct ProfileHeaderView: View {
                 .foregroundColor(.secondary)
             }
             
-            Spacer()
             
-            Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 20)
+        
     }
+}
+#Preview {
+    ProfileView()
 }

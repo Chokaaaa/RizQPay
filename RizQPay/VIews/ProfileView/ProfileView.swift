@@ -44,8 +44,7 @@ struct ProfileView: View {
                         
                         ProfileMenuItem(
                             icon: "circle.circle",
-                            title: "d-coins",
-                            subtitle: "200",
+                            title: "Membership",
                             badge: "Bronze",
                             showsDisclosure: true,
                             destinationType: .coins
@@ -54,7 +53,7 @@ struct ProfileView: View {
                         ProfileMenuItem(
                             icon: "creditcard",
                             title: "Wallet",
-                            subtitle: "4.00 AED",
+                            subtitle: "2,500 ₸",
                             subtitleColor: .orange,
                             showsDisclosure: true,
                             destinationType: .wallet
@@ -81,13 +80,7 @@ struct ProfileView: View {
                             destinationType: .loyalty
                         )
                         
-                        ProfileMenuItem(
-                            icon: "bookmark",
-                            title: "Lists",
-                            showsDisclosure: true,
-                            destinationType: .lists
-                        )
-                        
+                    
                         ProfileMenuItem(
                             icon: "questionmark.circle",
                             title: "Support",

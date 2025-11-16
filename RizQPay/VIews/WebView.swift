@@ -37,11 +37,21 @@ struct WebView: UIViewRepresentable {
         // Set navigation delegate for better error handling
         webView.navigationDelegate = context.coordinator
         
+        // Load the initial URL when creating the web view (only once)
+        if let url = url {
+            var request = URLRequest(url: url)
+            request.cachePolicy = .returnCacheDataElseLoad
+            request.timeoutInterval = 10.0
+            webView.load(request)
+        }
+        
         return webView
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        if let url = url {
+        // Only load the URL if it's different from the currently loaded URL
+        // This prevents infinite refreshing when SwiftUI re-renders the view
+        if let url = url, url != webView.url {
             // Optimized request with aggressive caching for faster loading
             var request = URLRequest(url: url)
             request.cachePolicy = .returnCacheDataElseLoad // Use cache if available
@@ -73,6 +83,11 @@ struct WebView: UIViewRepresentable {
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             print("❌ WebView failed to load: \(error.localizedDescription)")
+            parent.isLoading = false
+        }
+        
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            print("❌ WebView provisional navigation failed: \(error.localizedDescription)")
             parent.isLoading = false
         }
     }

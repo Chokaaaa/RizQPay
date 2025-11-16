@@ -14,7 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		846E5E632EBD2AC700416562 /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = RizQPay.app; path = "/Users/nursultanyelemessov/Desktop/ИП RizQ/Приложение/iOS/RizQPay/build/Debug-iphoneos/RizQPay.app"; sourceTree = "<absolute>"; };
+		844739E12EC9C27800F30D2C /* RizQPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RizQPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84D0B6A22EC0E743001BF24D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		84D0B6A42EC0E748001BF24D /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 		84D0B6A62EC0E74D001BF24D /* Config.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Config.plist.template; sourceTree = "<group>"; };
@@ -47,6 +47,7 @@
 				84D0B6A22EC0E743001BF24D /* .gitignore */,
 				84D0B6A42EC0E748001BF24D /* Config.plist */,
 				84D0B6A62EC0E74D001BF24D /* Config.plist.template */,
+				844739E12EC9C27800F30D2C /* RizQPay.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -73,7 +74,7 @@
 				84FA584B2EB8F11C00A4BE7F /* GoogleMaps */,
 			);
 			productName = RizQPay;
-			productReference = 846E5E632EBD2AC700416562 /* RizQPay.app */;
+			productReference = 844739E12EC9C27800F30D2C /* RizQPay.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
