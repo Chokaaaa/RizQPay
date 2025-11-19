@@ -11,6 +11,7 @@ import CoreLocation
 
 // MARK: - Main Map View (Google Maps)
 struct MapView: View {
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingCamera = false
     @State private var showingProfile = false
     @State private var selectedBusiness: BusinessLocation?

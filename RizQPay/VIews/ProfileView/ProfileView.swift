@@ -9,10 +9,11 @@ import SwiftUI
 
 
 struct ProfileView: View {
+    @EnvironmentObject var authManager: AuthenticationManager
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
                     // Close Button
@@ -88,12 +89,30 @@ struct ProfileView: View {
                             destinationType: .support
                         )
                         
-                        ProfileMenuItem(
-                            icon: "power",
-                            title: "Logout",
-                            showsDisclosure: true,
-                            destinationType: .logout
-                        )
+                        // Logout button that clears authentication
+                        Button {
+                            authManager.logout()
+                        } label: {
+                            HStack {
+                                Image(systemName: "power")
+                                    .font(.title2)
+                                    .foregroundColor(.red)
+                                    .frame(width: 24)
+                                
+                                Text("Logout")
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                        }
+                        .buttonStyle(.plain)
                         
                     }
                     .padding(.top, 20)
@@ -108,4 +127,5 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(AuthenticationManager())
 }
